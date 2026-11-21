@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="top"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="11dp">
+
+    <!-- Круглый аватар контакта или силуэт -->
+    <FrameLayout
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="13dp">
+
+        <ImageView
+            android:id="@+id/ivAvatarBg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/bg_circle_shape"
+            tools:tint="#49494D" />
+
+        <TextView
+            android:id="@+id/tvAvatarLetter"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="Д" />
+
+        <ImageView
+            android:id="@+id/ivAvatarIcon"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_person"
+            app:tint="#C4C7C5"
+            android:visibility="visible" />
+    </FrameLayout>
+
+    <!-- Центр: заголовок + New + превью -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/ivChatPin"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_pin"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/tvChatTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                app:layout_constrainedWidth="true"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/tvChatNewBadge"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintHorizontal_chainStyle="packed"
+                app:layout_constraintStart_toEndOf="@id/ivChatPin"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="T-Bank" />
+
+            <TextView
+                android:id="@+id/tvChatNewBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_badge_new"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="1dp"
+                android:text="@string/chat_badge_new"
+                android:textColor="#8AB4F8"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/tvChatTitle"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:visibility="visible" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/tvChatPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="#9AA0A6"
+            android:textSize="14sp"
+            tools:text="Поступил платёж 170 руб." />
+    </LinearLayout>
+
+    <!-- Правая колонка: время и счётчик непрочитанных -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="end|top"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvChatTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#9AA0A6"
+            android:textSize="12sp"
+            tools:text="Mon" />
+
+        <TextView
+            android:id="@+id/tvChatUnreadCount"
+            android:layout_width="wrap_content"
+            android:layout_height="22dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_badge_unread"
+            android:gravity="center"
+            android:minWidth="22dp"
+            android:paddingHorizontal="6dp"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="20"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+</LinearLayout>

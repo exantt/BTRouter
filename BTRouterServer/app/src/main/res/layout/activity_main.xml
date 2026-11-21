@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:paddingTop="14dp"
+        android:paddingBottom="12dp"
+        android:text="Server (Шлюз)"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1C1C1E"
+        app:tabBackground="@android:color/transparent"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="#2196F3"
+        app:tabIndicatorHeight="3dp"
+        app:tabMode="fixed"
+        app:tabRippleColor="#332196F3"
+        app:tabSelectedTextColor="#FFFFFF"
+        app:tabTextColor="#8E8E93">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ГЛАВНАЯ" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="НАСТРОЙКИ" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2C2C2E" />
+
+    <ScrollView
+        android:id="@+id/rootScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ВКЛАДКА 1: ГЛАВНАЯ -->
+            <LinearLayout
+                android:id="@+id/tabMainContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- КАРТОЧКА СОСТОЯНИЯ СЛУЖБЫ -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:background="#1C1C1E"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="СТАТУС ШЛЮЗА"
+                            android:textColor="#8E8E93"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvClientConnBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="● ОЖИДАНИЕ"
+                            android:textColor="#FF9800"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvServerState"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Запуск фоновой службы..."
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- КАРТОЧКА БЕЗОПАСНОСТИ -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:background="#1C1C1E"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="БЕЗОПАСНОСТЬ И ДОСТУП CLIENT"
+                        android:textColor="#8E8E93"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvAllowedClient"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:text="Client не выбран (подключения отклоняются)"
+                        android:textColor="#E5E5EA"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnSelectClient"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:backgroundTint="#2196F3"
+                        android:text="ВЫБРАТЬ УСТРОЙСТВО CLIENT"
+                        android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:text="КЛЮЧ СОПРЯЖЕНИЯ (PSK)"
+                        android:textColor="#8E8E93"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvPairingSecret"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:fontFamily="monospace"
+                        android:text="••••-••••-••••-••••"
+                        android:textColor="#4CAF50"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:weightSum="3">
+
+                        <Button
+                            android:id="@+id/btnToggleSecret"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="#2C2C2E"
+                            android:maxLines="1"
+                            android:paddingHorizontal="4dp"
+                            android:text="ПОКАЗАТЬ"
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp" />
+
+                        <Button
+                            android:id="@+id/btnCopySecret"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="#2C2C2E"
+                            android:maxLines="1"
+                            android:paddingHorizontal="4dp"
+                            android:text="КОПИР."
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp" />
+
+                        <Button
+                            android:id="@+id/btnRegenerateSecret"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:backgroundTint="#4A2020"
+                            android:maxLines="1"
+                            android:paddingHorizontal="4dp"
+                            android:text="ОБНОВИТЬ"
+                            android:textColor="#FF8A80"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ВКЛАДКА 2: НАСТРОЙКИ -->
+            <LinearLayout
+                android:id="@+id/tabSettingsContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <!-- СИСТЕМНЫЕ НАСТРОЙКИ Т2 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:background="#1C1C1E"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:text="СИСТЕМНЫЕ НАСТРОЙКИ SERVER"
+                        android:textColor="#8E8E93"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnOpenAppSettings"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:backgroundTint="#2C2C2E"
+                        android:text="ПРАВА И БАТАРЕЯ ПРИЛОЖЕНИЯ"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/btnOpenBtSettings"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:backgroundTint="#2C2C2E"
+                        android:text="НАСТРОЙКИ BLUETOOTH"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/btnRequestPermissions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="#2C2C2E"
+                        android:text="ЗАПРОСИТЬ РАЗРЕШЕНИЯ"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <!-- ТЕСТОВЫЕ КНОПКИ (ТОЛЬКО ДЛЯ DEBUG-СБОРКИ) -->
+                <LinearLayout
+                    android:id="@+id/layoutDebugTests"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#1C1C1E"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="ОТЛАДКА (DEBUG)"
+                        android:textColor="#8E8E93"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnTestCall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:backgroundTint="#FF9800"
+                        android:text="ТЕСТОВЫЙ ЗВОНОК НА CLIENT"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/btnTestMissedCall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:backgroundTint="#E91E63"
+                        android:text="ТЕСТОВЫЙ ПРОПУЩЕННЫЙ ВЫЗОВ"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/btnTestStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="#2196F3"
+                        android:text="ОТПРАВИТЬ СТАТУС (БАТАРЕЯ / СЕТЬ)"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvAppVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="16dp"
+                android:textColor="#666666"
+                android:textSize="11sp"
+                tools:text="v1.1.0" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

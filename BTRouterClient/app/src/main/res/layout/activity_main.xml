@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:id="@+id/mainContentColumn"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="0dp">
+
+        <!-- КАРТОЧКА СОСТОЯНИЯ Т2 (СЕРВЕРА) -->
+        <LinearLayout
+            android:id="@+id/layoutT2Status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_card_rounded"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/main_server_gateway_label"
+                    android:textColor="#8E8E93"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvT2ConnIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/main_conn_searching"
+                    android:textColor="#FF453A"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnRefreshStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="6dp"
+                    android:backgroundTint="#2C2C2E"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="0dp"
+                    android:text="@string/btn_refresh_emoji"
+                    android:textColor="#4CAF50"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnConfigureT2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:backgroundTint="#2C2C2E"
+                    android:contentDescription="@string/settings_title"
+                    android:minWidth="34dp"
+                    android:minHeight="0dp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="0dp"
+                    android:text="⚙"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <!-- Батарея Т2 -->
+                <TextView
+                    android:id="@+id/tvT2Battery"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🔋 --%"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <!-- Сеть Т2 -->
+                <TextView
+                    android:id="@+id/tvT2Network"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.2"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:singleLine="true"
+                    android:text="📶 --"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <!-- Интернет Т2 -->
+                <TextView
+                    android:id="@+id/tvT2Data"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.8"
+                    android:gravity="end"
+                    android:text="🌐 --"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- КОМПАКТНЫЕ КРУГЛЫЕ ПЕРЕКЛЮЧАТЕЛИ MOBILE DATA + MOBILE HOTSPOT В ОДНОЙ СТРОКЕ -->
+        <LinearLayout
+            android:id="@+id/layoutQuickTogglesRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingVertical="2dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:id="@+id/layoutMobileDataTile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:minWidth="86dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="6dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/btnMobileDataTile"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="@drawable/bg_circle_shape"
+                    android:backgroundTint="#2C2C2E"
+                    android:contentDescription="@string/quick_tile_mobile_data"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_mobile_data"
+                    app:tint="#D1D1D6" />
+
+                <TextView
+                    android:id="@+id/tvMobileDataLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:text="@string/quick_tile_mobile_data"
+                    android:textColor="#9AA0A6"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutHotspotTile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:minWidth="86dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="6dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/btnHotspotTile"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:background="@drawable/bg_circle_shape"
+                    android:backgroundTint="#2C2C2E"
+                    android:contentDescription="@string/quick_tile_hotspot"
+                    android:padding="11dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_hotspot"
+                    app:tint="#D1D1D6" />
+
+                <TextView
+                    android:id="@+id/tvHotspotLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:text="@string/quick_tile_hotspot"
+                    android:textColor="#9AA0A6"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- КОМПАКТНАЯ СТРОКА СТАТУСА ПОДКЛЮЧЕНИЯ / ОПЕРАЦИЙ -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/status_waiting_connection"
+            android:textColor="#888888"
+            android:textSize="12sp" />
+
+        <!-- ПАНЕЛЬ ВХОДЯЩЕГО ЗВОНКА (СКРЫТА ПО УМОЛЧАНИЮ) -->
+        <LinearLayout
+            android:id="@+id/callLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="#261212"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/incoming_call_title"
+                android:textColor="#FF5252"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCallerNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="14dp"
+                android:text="+0 000 000 00 00"
+                android:textAlignment="center"
+                android:textColor="#FFFFFF"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnDecline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:backgroundTint="#F44336"
+                android:paddingHorizontal="28dp"
+                android:text="@string/btn_decline_call"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/incoming_call_answer_hint"
+                android:textAlignment="center"
+                android:textColor="#AAAAAA"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- СПИСОК ЧАТОВ В СТИЛЕ GOOGLE MESSAGES -->
+        <FrameLayout
+            android:id="@+id/layoutChatsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_chats_panel">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvChats"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingTop="6dp"
+                android:paddingBottom="88dp" />
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyChats"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="28dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chats_empty_title"
+                    android:textColor="#E3E3E6"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="@string/chats_empty_subtitle"
+                    android:textColor="#8E8E93"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- ЛЕВАЯ НИЖНЯЯ КНОПКА: ЛОГ ПРОПУЩЕННЫХ ВЫЗОВОВ -->
+    <FrameLayout
+        android:id="@+id/layoutMissedCallsFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="18dp"
+        android:layout_marginBottom="18dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <ImageButton
+            android:id="@+id/fabMissedCalls"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_circle_shape"
+            android:backgroundTint="#26282E"
+            android:contentDescription="@string/cd_missed_calls_fab"
+            android:elevation="6dp"
+            android:padding="15dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_call_missed"
+            app:tint="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvMissedCallsBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_circle_shape"
+            android:backgroundTint="#E53935"
+            android:elevation="8dp"
+            android:gravity="center"
+            android:minWidth="20dp"
+            android:paddingHorizontal="5dp"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="3"
+            tools:visibility="visible" />
+    </FrameLayout>
+
+    <!-- МЕЛКАЯ ВЕРСИЯ ПРИЛОЖЕНИЯ ВНИЗУ ПО ЦЕНТРУ -->
+    <TextView
+        android:id="@+id/tvAppVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="10dp"
+        android:textColor="#555555"
+        android:textSize="10sp"
+        tools:text="v1.1.0" />
+
+    <!-- ПРАВАЯ НИЖНЯЯ КНОПКА: НОВОЕ СМС -->
+    <ImageButton
+        android:id="@+id/fabNewSms"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_circle_shape"
+        android:backgroundTint="#2D5DA8"
+        android:contentDescription="@string/cd_new_sms_fab"
+        android:elevation="6dp"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_new_sms"
+        app:tint="#FFFFFF" />
+
+</FrameLayout>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp">
+
+    <FrameLayout
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_marginEnd="14dp"
+        android:background="@drawable/bg_circle_shape"
+        android:backgroundTint="#2B1B1B">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_call_missed"
+            app:tint="#FF5252" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvMissedCallerName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="Мама" />
+
+        <TextView
+            android:id="@+id/tvMissedCallerSub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#9AA0A6"
+            android:textSize="13sp"
+            tools:text="+7 999 000 00 00 • 14:20" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnMissedCallSms"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/bg_circle_shape"
+        android:backgroundTint="#1E3A5F"
+        android:contentDescription="@string/cd_send_sms_to_caller"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_new_sms"
+        app:tint="#8AB4F8" />
+
+</LinearLayout>

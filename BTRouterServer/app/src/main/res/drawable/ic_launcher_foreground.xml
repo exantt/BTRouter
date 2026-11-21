@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer glow ring -->
+    <path
+        android:pathData="M54,18 A36,36 0 1,1 53.99,18 Z"
+        android:fillColor="#0A1F33"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.3" />
+
+    <!-- Inner circle background -->
+    <path
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24 Z"
+        android:fillColor="#0D2640" />
+
+    <!-- Signal arc 1 (innermost) -->
+    <path
+        android:pathData="M65,42 A14,14 0 0,1 65,66"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.9" />
+
+    <!-- Signal arc 2 (middle) -->
+    <path
+        android:pathData="M70,37 A21,21 0 0,1 70,71"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.6" />
+
+    <!-- Signal arc 3 (outermost) -->
+    <path
+        android:pathData="M75,32 A28,28 0 0,1 75,76"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.35" />
+
+    <!-- Bluetooth symbol — vertical spine -->
+    <path
+        android:pathData="M51,35 L51,73"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <!-- Bluetooth — upper-right diagonal (↗) -->
+    <path
+        android:pathData="M51,35 L62,46"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <!-- Bluetooth — upper-left diagonal (↙) -->
+    <path
+        android:pathData="M62,46 L40,62"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <!-- Bluetooth — lower-right diagonal (↘) -->
+    <path
+        android:pathData="M51,73 L62,62"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <!-- Bluetooth — lower-left diagonal (↖) -->
+    <path
+        android:pathData="M62,62 L40,46"
+        android:fillColor="#00000000"
+        android:strokeColor="#00CFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <!-- SIM card icon (bottom-right corner) -->
+    <!-- SIM body -->
+    <path
+        android:pathData="M72,74 L82,74 L82,86 L72,86 Z"
+        android:fillColor="#00CFFF"
+        android:fillAlpha="0.85" />
+    <!-- SIM chip cut-out (top-left corner of SIM) -->
+    <path
+        android:pathData="M72,74 L76,74 L76,78 L72,78 Z"
+        android:fillColor="#0D2640" />
+    <!-- SIM chip lines -->
+    <path
+        android:pathData="M74,79 L80,79"
+        android:fillColor="#00000000"
+        android:strokeColor="#0D2640"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.8" />
+    <path
+        android:pathData="M74,81 L80,81"
+        android:fillColor="#00000000"
+        android:strokeColor="#0D2640"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.8" />
+    <path
+        android:pathData="M74,83 L80,83"
+        android:fillColor="#00000000"
+        android:strokeColor="#0D2640"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.8" />
+
+</vector>

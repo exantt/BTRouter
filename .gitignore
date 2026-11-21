@@ -1,0 +1,42 @@
+# Gradle & Kotlin build caches
+.gradle/
+**/.gradle/
+build/
+**/build/
+.kotlin/
+**/.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+dist/
+
+# Local IDE & SDK files
+local.properties
+**/local.properties
+.idea/
+**/.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Signing keys, secrets, and release binaries (NEVER commit!)
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+**/keystore.properties
+signing.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+*.hprof
+*.log

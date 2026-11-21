@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Wireless signal arcs above phone (remote control vibe) -->
+    <!-- Arc 1 (innermost) -->
+    <path
+        android:pathData="M46,30 A11,11 0 0,1 62,30"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.95" />
+    <!-- Arc 2 (middle) -->
+    <path
+        android:pathData="M41,24 A19,19 0 0,1 67,24"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.6" />
+    <!-- Arc 3 (outermost) -->
+    <path
+        android:pathData="M36,18 A27,27 0 0,1 72,18"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.3" />
+
+    <!-- Phone body (rounded rectangle) -->
+    <path
+        android:pathData="M38,34 L70,34 Q73,34 73,37 L73,86 Q73,89 70,89 L38,89 Q35,89 35,86 L35,37 Q35,34 38,34 Z"
+        android:fillColor="#1A3A26" />
+
+    <!-- Phone screen -->
+    <path
+        android:pathData="M39,40 L69,40 L69,80 L39,80 Z"
+        android:fillColor="#0A1F10" />
+
+    <!-- Screen glow / active indicator -->
+    <path
+        android:pathData="M39,40 L69,40 L69,80 L39,80 Z"
+        android:fillColor="#00E676"
+        android:fillAlpha="0.07" />
+
+    <!-- Phone top bar (earpiece) -->
+    <path
+        android:pathData="M48,37 L60,37"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.5" />
+
+    <!-- Home button -->
+    <path
+        android:pathData="M54,84 A2,2 0 1,1 53.99,84 Z"
+        android:fillColor="#00E676"
+        android:fillAlpha="0.6" />
+
+    <!-- Bluetooth symbol on phone screen -->
+    <!-- BT spine -->
+    <path
+        android:pathData="M54,48 L54,72"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <!-- BT upper-right -->
+    <path
+        android:pathData="M54,48 L62,55"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <!-- BT upper-left -->
+    <path
+        android:pathData="M62,55 L46,65"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <!-- BT lower-right -->
+    <path
+        android:pathData="M54,72 L62,65"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+    <!-- BT lower-left -->
+    <path
+        android:pathData="M62,65 L46,55"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Phone body outline / highlight -->
+    <path
+        android:pathData="M38,34 L70,34 Q73,34 73,37 L73,86 Q73,89 70,89 L38,89 Q35,89 35,86 L35,37 Q35,34 38,34 Z"
+        android:fillColor="#00000000"
+        android:strokeColor="#00E676"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.7" />
+
+</vector>

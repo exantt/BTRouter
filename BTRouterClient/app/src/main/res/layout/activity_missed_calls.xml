@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/missedCallsRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:orientation="vertical">
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1C1C1E"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
+
+        <Button
+            android:id="@+id/btnMissedCallsBack"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:backgroundTint="#2C2C2E"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="0dp"
+            android:text="@string/btn_back"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:text="@string/missed_calls_title"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnClearMissedCalls"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:backgroundTint="#2C2C2E"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="0dp"
+            android:text="@string/missed_calls_clear"
+            android:textColor="#FF8A80"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#2C2C2E" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMissedCalls"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="6dp"
+        android:paddingBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tvMissedCallsEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:padding="24dp"
+        android:text="@string/missed_calls_empty"
+        android:textColor="#8E8E93"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+</LinearLayout>
