@@ -534,12 +534,13 @@ textarea:focus-visible {
 
 .devices-stage {
   display: grid;
-  grid-template-columns: minmax(212px, 1fr) 114px minmax(230px, 1.06fr);
+  grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
 
 .phone-wrap {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -574,7 +575,8 @@ textarea:focus-visible {
 
 .phone-frame {
   width: 100%;
-  max-width: 264px;
+  max-width: 256px;
+  box-sizing: border-box;
   border-radius: 30px;
   padding: 10px;
   background: linear-gradient(165deg, #272B35 0%, #12151B 100%);
@@ -601,7 +603,10 @@ textarea:focus-visible {
 .phone-screen {
   background: #111317;
   border-radius: 20px;
-  min-height: 412px;
+  height: 472px;
+  min-height: 472px;
+  max-height: 472px;
+  box-sizing: border-box;
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -613,6 +618,7 @@ textarea:focus-visible {
 
 /* Server Screen Mockup */
 .app-bar-server {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -651,6 +657,7 @@ textarea:focus-visible {
 }
 
 .srv-card {
+  flex-shrink: 0;
   background: #191C22;
   border-radius: 10px;
   padding: 9px;
@@ -685,6 +692,7 @@ textarea:focus-visible {
   font-size: 11px;
   color: var(--ink-primary);
   line-height: 1.35;
+  min-height: 30px;
 }
 
 .srv-mac-row {
@@ -723,11 +731,14 @@ textarea:focus-visible {
 .srv-psk-box code {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   color: var(--emerald);
   letter-spacing: 0.01em;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mini-btn {
@@ -751,15 +762,20 @@ textarea:focus-visible {
 }
 
 .srv-log-card {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .srv-log-list {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-height: 122px;
-  overflow: hidden;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(243, 242, 238, 0.16) transparent;
 }
 
 .srv-log-item {
@@ -879,12 +895,15 @@ textarea:focus-visible {
   border-radius: 5px;
   line-height: 1.3;
   text-align: center;
-  max-width: 112px;
-  word-break: break-word;
+  max-width: 104px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Client Screen Mockup */
 .cli-status-card {
+  flex-shrink: 0;
   background: #191C22;
   border-radius: 12px;
   padding: 9px 10px;
@@ -929,6 +948,7 @@ textarea:focus-visible {
 }
 
 .cli-toggles-row {
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -989,21 +1009,26 @@ textarea:focus-visible {
 }
 
 .cli-status-sub {
+  flex-shrink: 0;
   text-align: center;
   font-size: 9.5px;
   color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cli-call-banner {
+  flex-shrink: 0;
   background: #261414;
   border: 1px solid rgba(255, 94, 82, 0.42);
   border-radius: 11px;
-  padding: 10px;
+  padding: 8px 10px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .cli-call-banner[hidden] {
@@ -1050,7 +1075,8 @@ textarea:focus-visible {
 }
 
 .cli-chats-panel {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   background: #181B21;
   border-radius: 14px;
   padding: 8px 8px 46px;
@@ -1064,8 +1090,28 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 205px;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(243, 242, 238, 0.16) transparent;
+}
+
+.cli-chat-list::-webkit-scrollbar,
+.srv-log-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cli-chat-list::-webkit-scrollbar-track,
+.srv-log-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cli-chat-list::-webkit-scrollbar-thumb,
+.srv-log-list::-webkit-scrollbar-thumb {
+  background: rgba(243, 242, 238, 0.16);
+  border-radius: 999px;
 }
 
 .chat-item {
@@ -1222,6 +1268,8 @@ textarea:focus-visible {
   left: 10px;
   right: 10px;
   bottom: 48px;
+  z-index: 5;
+  pointer-events: none;
   background: rgba(12, 22, 17, 0.96);
   border: 1px solid rgba(38, 217, 127, 0.45);
   color: var(--emerald);

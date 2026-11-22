@@ -388,7 +388,7 @@
         title: 'Банковский код без перестановки SIM',
         desc: 'Вы оплачиваете покупку в поездке — запасной телефон в рюкзаке ловит СМС от домашнего банка и через секунду показывает готовый код для вставки на основном экране.',
         rows: [
-          { label: 'Отправитель', value: 'T-Bank' },
+          { label: 'Отправитель', value: 'NovaBank' },
           { label: 'Сообщение', value: 'Подтверждение оплаты 1 490 RUB' },
         ],
         highlightCode: '649 208',
@@ -569,7 +569,7 @@
   };
 
   const otpPresets = {
-    ru: 'MIR-4412 19.11.26 Оплата 1 490.00 RUB. Код подтверждения: 649208. Никому не говорите код.',
+    ru: 'CARD-4412 19.11.26 Оплата 1 490.00 RUB. Код подтверждения: 649208. Никому не говорите код.',
     en: 'Your verification code is 839104 for card *9082 ($124.50 on 11/22/2026). Do not share it.',
     tr: '482910 tek kullanimlik sifreniz ile *7731 kartinizdan 850.00 TL harcama onaylayiniz. B001',
   };
@@ -682,10 +682,10 @@
       const card = document.createElement('div');
       card.className = 'chat-item unread';
       card.innerHTML = `
-        <div class="chat-avatar avatar-emerald">S</div>
+        <div class="chat-avatar avatar-emerald">M</div>
         <div class="chat-body">
           <div class="chat-head">
-            <span class="chat-sender">SberBank</span>
+            <span class="chat-sender">MyBank</span>
             <span class="chat-time">${currentLang === 'ru' ? 'сейчас' : 'now'}</span>
           </div>
           <div class="chat-preview">${
