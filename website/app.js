@@ -3,18 +3,17 @@
     ru: {
       nav_use_cases: 'Для кого',
       nav_features: 'Возможности',
-      nav_setup: 'Как настроить',
+      nav_setup: 'Настройка',
       nav_download: 'Скачать',
-      nav_tech: 'Под капотом',
-      hero_pill: 'Прямая связь по Bluetooth · Без интернета и облаков · Бесплатно',
-      hero_title: 'Второй телефон в рюкзаке — все СМС и звонки у вас в руках',
+      nav_tech: 'Подробно',
+      hero_pill: 'BTRouter · Android 10+ · Прямой Bluetooth',
+      hero_title_lead: 'Второй телефон в рюкзаке — все СМС и звонки',
+      hero_title_accent: 'у вас в руках',
       hero_subtitle:
-        'BTRouter соединяет ваш основной смартфон со вторым телефоном, где стоит нужная SIM-карта. Читайте и отправляйте СМС, копируйте коды из банков в одно касание, сбрасывайте лишние звонки и включайте раздачу Wi-Fi удалённо — даже без интернета.',
-      hero_cta_download: 'Скачать приложение',
-      hero_cta_demo: 'Посмотреть в действии',
-      hero_chip_1: 'Для Android 10 и новее',
-      hero_chip_2: 'Надёжное шифрование',
-      hero_chip_3: 'Работает без интернета',
+        'BTRouter соединяет ваш основной смартфон со вторым телефоном, где стоит нужная SIM-карта. Читайте и отправляйте СМС, копируйте коды из банков за секунду, сбрасывайте лишние звонки и включайте Wi-Fi удалённо — даже без интернета.',
+      hero_cta_demo: 'Попробовать в действии',
+      hero_cta_download: 'О релизе v1.1.0',
+      hero_meta_line: 'Работает офлайн · Без облаков и аккаунтов · Открытый код MIT',
       role_server: 'Телефон с SIM',
       role_client: 'Основной телефон',
       srv_title: 'Телефон с SIM',
@@ -55,7 +54,7 @@
       val_3_desc: 'Заряд батареи, уровень сигнала и звонки второго телефона в одном окне',
       val_4_title: 'Бесплатно',
       val_4_desc: 'Никаких подписок, рекламы, регистраций и скрытых ограничений',
-      cases_eyebrow: 'ДЛЯ ЧЕГО ЭТО НУЖНО',
+      cases_eyebrow: '01 / ДЛЯ ЧЕГО ЭТО НУЖНО',
       cases_title: 'Удобно каждый день и в поездках',
       cases_desc:
         'Не носите два телефона в руках и не переставляйте постоянно SIM-карты — пусть второй смартфон спокойно лежит в рюкзаке, кармане или дома.',
@@ -65,10 +64,10 @@
       case_2_title: 'Рабочий и личный номер',
       case_2_desc:
         'Не доставайте второй смартфон ради каждого уведомления: переписывайтесь по СМС, сбрасывайте спам-звонки и смотрите пропущенные с одного устройства.',
-      case_3_title: 'Интернет и раздача Wi-Fi',
+      case_3_title: 'Интернет и раздача Wi\u2011Fi',
       case_3_desc:
         'Если второй телефон — Samsung, включайте на нём мобильный интернет и точку доступа Wi-Fi в одно касание с основного телефона, не доставая его из рюкзака.',
-      features_eyebrow: 'ВОЗМОЖНОСТИ',
+      features_eyebrow: '02 / ВОЗМОЖНОСТИ',
       features_title: 'Всё, к чему вы привыкли — на главном телефоне',
       features_desc:
         'Простой и понятный интерфейс с чатами, быстрым копированием кодов и контролем состояния второго телефона.',
@@ -84,20 +83,30 @@
       feat_telemetry_title: 'Заряд и связь всегда перед глазами',
       feat_telemetry_desc:
         'В шапке приложения и в шторке уведомлений всегда видно, сколько заряда осталось на втором телефоне, ловит ли он сеть и включён ли мобильный интернет.',
+      notif_connected: 'Подключён',
+      notif_now: 'сейчас',
       feat_calls_title: 'Звонки и пропущенные',
       feat_calls_desc:
         'Узнавайте о входящем звонке сразу и сбрасывайте ненужные вызовы прямо с основного телефона. Пропущенные сохраняются в отдельный список со счётчиком.',
+      call_mini_decline: 'Сбросить',
+      call_mini_declined: 'Сброшено ✓',
       feat_contacts_title: 'Контакты с обоих телефонов',
       feat_contacts_desc:
         'Пишите людям из записной книжки любого из двух смартфонов — переключение между адресными книгами и недавними номерами работает в один тап.',
+      book_client: 'Основной',
+      book_server: 'С телефона SIM',
       feat_samsung_title: 'Точка доступа в один клик (Samsung)',
       feat_samsung_desc:
         'Удобные круглые кнопки прямо на главном экране позволяют удалённо включать интернет и раздачу Wi-Fi на втором телефоне Samsung.',
       feat_sync_title: 'Ни одно сообщение не потеряется, даже если вы отошли',
       feat_sync_desc:
         'Если телефоны временно потеряли связь, всё накопившееся автоматически догрузится при возвращении в радиус Bluetooth. А после перезагрузки приложение само запустится заново без лишних напоминаний.',
-      priv_eyebrow: 'ПРИВАТНОСТЬ И ЗАЩИТА',
+      flow_1: 'Отошли от телефона',
+      flow_2: 'Сохранено в очереди',
+      flow_3: 'Мгновенно догружено',
+      priv_eyebrow: '03 / ПРИВАТНОСТЬ',
       priv_title: 'Ваши сообщения остаются только между вами и вашими телефонами',
+      priv_seal: 'Прямой канал без серверов, аккаунтов и чужих облаков.',
       priv_1_tag: 'ТОЛЬКО НАПРЯМУЮ',
       priv_1_title: 'Никаких серверов и аккаунтов',
       priv_1_desc:
@@ -110,7 +119,7 @@
       priv_3_title: 'Переписка под надёжным замком',
       priv_3_desc:
         'Каждое сообщение и событие звонка надёжно зашифровано в пути, а секретные ключи хранятся в защищённой области памяти смартфона.',
-      setup_eyebrow: 'ПРОСТОЙ СТАРТ',
+      setup_eyebrow: '04 / БЫСТРЫЙ СТАРТ',
       setup_title: 'Настройка за пару минут',
       step1_title: 'Установите приложение на оба смартфона',
       step1_desc: 'На телефон с SIM-картой поставьте версию Server, а на ваш основной телефон — версию Client.',
@@ -131,10 +140,10 @@
       kw_hotspot_off: 'Мобильная точка доступа → Выкл.',
       kw_data_on: 'Мобильные данные → Вкл.',
       kw_data_off: 'Мобильные данные → Выкл.',
-      dl_eyebrow: 'СКАЧАТЬ v1.1.0',
+      dl_eyebrow: '05 / СКАЧАТЬ v1.1.0',
       dl_title: 'Выберите приложение для каждого телефона',
       dl_desc:
-        'Оба установочных файла бесплатны и доступны на странице релизов проекта на GitHub. Подходит для любых смартфонов на Android 10 и выше.',
+        'Оба установочных файла бесплатны и подходят для любых смартфонов на Android 10 и выше.',
       dl_client_role: 'На ваш основной телефон',
       dl_client_sub: 'Приём СМС, кодов и звонков',
       dl_client_desc:
@@ -147,7 +156,7 @@
       dl_btn_unavailable: 'Релиз пока недоступен',
       dl_notice_text: 'Готовые APK-файлы ещё не опубликованы — первый публичный релиз скоро появится на GitHub.',
       dl_notice_link: 'Открыть страницу Releases →',
-      tech_eyebrow: 'ПОД КАПОТОМ · ДЛЯ СПЕЦИАЛИСТОВ',
+      tech_eyebrow: 'ПОДРОБНО · ДЛЯ СПЕЦИАЛИСТОВ',
       tech_title: 'Архитектура, криптография и сборка из исходного кода',
       tech_desc:
         'Этот раздел предназначен для разработчиков и тех, кто хочет детально изучить внутреннее устройство протокола BtProtocol, схему шифрования и команды сборки.',
@@ -178,23 +187,22 @@
         'Включены R8-минификация, сжатие ресурсов, удаление Log.v / Log.d / Log.i, проверка подписи apksigner и публикация контрольных сумм SHA256SUMS.txt в GitHub Actions.',
       build_title: 'Сборка из исходного кода (JDK 21 · Android SDK 36.1)',
       build_sub: 'Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 19 / Server versionCode 15)',
-      footer_tech: 'Техническая документация',
+      footer_tech: 'Подробно',
     },
     en: {
       nav_use_cases: 'Use Cases',
       nav_features: 'Features',
       nav_setup: 'Setup',
       nav_download: 'Download',
-      nav_tech: 'Under the Hood',
-      hero_pill: 'Direct Bluetooth Link · No Internet or Cloud · Free & Open',
-      hero_title: 'Your second phone stays in your bag — all texts and calls right in your hand',
+      nav_tech: 'Details',
+      hero_pill: 'BTRouter · Android 10+ · Direct Bluetooth',
+      hero_title_lead: 'Your second phone stays in your bag — all texts and calls',
+      hero_title_accent: 'right in your hand',
       hero_subtitle:
-        'BTRouter links your everyday smartphone to your secondary phone holding the SIM card. Read and reply to SMS, copy bank verification codes in one tap, dismiss unwanted calls, and toggle Wi-Fi hotspot remotely — even offline.',
-      hero_cta_download: 'Download App',
+        'BTRouter links your everyday smartphone to your secondary phone holding the SIM card. Read and reply to SMS, copy bank verification codes in one second, dismiss unwanted calls, and toggle Wi-Fi hotspot remotely — even offline.',
       hero_cta_demo: 'See It in Action',
-      hero_chip_1: 'Android 10 and newer',
-      hero_chip_2: 'Private encrypted link',
-      hero_chip_3: 'Works without internet',
+      hero_cta_download: 'About v1.1.0 Release',
+      hero_meta_line: 'Works offline · Zero cloud accounts · Open-source MIT',
       role_server: 'SIM Phone',
       role_client: 'Primary Phone',
       srv_title: 'SIM Phone',
@@ -235,7 +243,7 @@
       val_3_desc: 'Battery level, signal strength, and calls from your SIM phone at a glance',
       val_4_title: 'Completely Free',
       val_4_desc: 'Open-source with no ads, no accounts, and no subscriptions',
-      cases_eyebrow: 'WHO IT HELPS',
+      cases_eyebrow: '01 / WHO IT HELPS',
       cases_title: 'Built for travel, work, and everyday convenience',
       cases_desc:
         'Stop juggling two phones in your hands or swapping SIM trays — keep your second phone tucked safely in your bag, pocket, or at home.',
@@ -245,10 +253,10 @@
       case_2_title: 'Work & personal numbers',
       case_2_desc:
         'No need to pull out your work phone for every ping: answer texts, dismiss spam calls, and review missed callers right from your daily phone.',
-      case_3_title: 'Remote internet & Wi-Fi hotspot',
+      case_3_title: 'Remote internet & Wi\u2011Fi hotspot',
       case_3_desc:
         'If your SIM phone is a Samsung, switch mobile data and Wi-Fi hotspot on or off remotely in one tap without ever taking it out of your backpack.',
-      features_eyebrow: 'FEATURES',
+      features_eyebrow: '02 / FEATURES',
       features_title: 'Everything you expect — right on your main phone',
       features_desc:
         'A clean, familiar messaging experience with smart code copying and live status from your second device.',
@@ -264,20 +272,30 @@
       feat_telemetry_title: 'Battery & signal always in sight',
       feat_telemetry_desc:
         'See your second phone’s battery percentage, charging status, carrier signal, and internet state right inside the app header and notification shade.',
+      notif_connected: 'Connected',
+      notif_now: 'now',
       feat_calls_title: 'Incoming calls & missed log',
       feat_calls_desc:
         'Get instant alerts when your second phone rings and decline unwanted calls remotely. Missed calls are saved neatly with an unread counter.',
+      call_mini_decline: 'Decline',
+      call_mini_declined: 'Declined ✓',
       feat_contacts_title: 'Contacts from both phones',
       feat_contacts_desc:
         'Message people saved on either smartphone — switch between your primary contacts, SIM phone contacts, and recent recipients in one tap.',
+      book_client: 'Primary',
+      book_server: 'SIM Phone',
       feat_samsung_title: 'One-tap Wi-Fi hotspot (Samsung)',
       feat_samsung_desc:
         'Handy round buttons right on the main screen let you toggle mobile data and Wi-Fi hotspot on a Samsung SIM phone.',
       feat_sync_title: 'Never miss a text, even if you step away',
       feat_sync_desc:
         'If your phones briefly move out of Bluetooth range, queued messages catch up automatically once you reconnect — and everything restarts smoothly after a reboot.',
-      priv_eyebrow: 'PRIVACY FIRST',
+      flow_1: 'Stepped away',
+      flow_2: 'Held in queue',
+      flow_3: 'Delivered on return',
+      priv_eyebrow: '03 / PRIVACY',
       priv_title: 'Your messages stay strictly between your two phones',
+      priv_seal: 'Direct Bluetooth link with zero third-party cloud servers.',
       priv_1_tag: 'DIRECT ONLY',
       priv_1_title: 'No servers or sign-ups',
       priv_1_desc:
@@ -290,7 +308,7 @@
       priv_3_title: 'Protected from start to finish',
       priv_3_desc:
         'Every message and call alert is encrypted in transit, and your pairing secret is kept inside protected device storage.',
-      setup_eyebrow: 'EASY SETUP',
+      setup_eyebrow: '04 / EASY SETUP',
       setup_title: 'Ready in a couple of minutes',
       step1_title: 'Install the apps on both phones',
       step1_desc: 'Put the Server app on your SIM phone and the Client app on your main phone.',
@@ -311,10 +329,10 @@
       kw_hotspot_off: 'Mobile Hotspot → Off',
       kw_data_on: 'Mobile Data → On',
       kw_data_off: 'Mobile Data → Off',
-      dl_eyebrow: 'DOWNLOAD v1.1.0',
+      dl_eyebrow: '05 / DOWNLOAD v1.1.0',
       dl_title: 'Get the right app for each phone',
       dl_desc:
-        'Both installers are completely free on GitHub Releases and work on any smartphone running Android 10 or newer.',
+        'Both installers are completely free and work on any smartphone running Android 10 or newer.',
       dl_client_role: 'For your everyday phone',
       dl_client_sub: 'Reads SMS, copies codes & shows calls',
       dl_client_desc:
@@ -327,7 +345,7 @@
       dl_btn_unavailable: 'Release not available yet',
       dl_notice_text: 'Prebuilt APK files are not published yet — the first public release will appear on GitHub soon.',
       dl_notice_link: 'View Releases page →',
-      tech_eyebrow: 'UNDER THE HOOD · FOR DEVELOPERS',
+      tech_eyebrow: 'DETAILS · FOR DEVELOPERS',
       tech_title: 'Architecture, cryptography & building from source',
       tech_desc:
         'Everything technical lives down here for engineers and power users: transport architecture, BtProtocol frame security, and Gradle build commands.',
@@ -358,7 +376,109 @@
         'Release APKs enable R8 minification, resource shrinking, stripping of Log.v / Log.d / Log.i, apksigner verification, and SHA256SUMS.txt checksums in GitHub Actions.',
       build_title: 'Build from source (JDK 21 · Android SDK 36.1)',
       build_sub: 'Run testDebugUnitTest, lintDebug, and assembleDebug (Client versionCode 19 / Server versionCode 15)',
-      footer_tech: 'Technical Docs',
+      footer_tech: 'Details',
+    },
+  };
+
+  const scenarioData = {
+    ru: [
+      {
+        badge: 'Сценарий 01 · Поездка',
+        signal: '● Bluetooth активен',
+        title: 'Банковский код без перестановки SIM',
+        desc: 'Вы оплачиваете покупку в поездке — запасной телефон в рюкзаке ловит СМС от домашнего банка и через секунду показывает готовый код для вставки на основном экране.',
+        rows: [
+          { label: 'Отправитель', value: 'T-Bank' },
+          { label: 'Сообщение', value: 'Подтверждение оплаты 1 490 RUB' },
+        ],
+        highlightCode: '649 208',
+        highlightChip: 'Скопировано в буфер',
+      },
+      {
+        badge: 'Сценарий 02 · Встреча или работа',
+        signal: '● Тихий контроль',
+        title: 'Рабочий номер под рукой, без лишнего шума',
+        desc: 'Во время встречи звонит незнакомый номер на рабочий смартфон — отклоняйте вызов одной кнопкой с основного экрана или ответьте по СМС, не доставая второй телефон.',
+        rows: [
+          { label: 'Входящий вызов', value: '+7 (916) 555-01-42' },
+          { label: 'Действие', value: 'Удалённый сброс и запись в пропущенные' },
+        ],
+        highlightCode: 'СБРОШЕНО',
+        highlightChip: 'В списке пропущенных: +1',
+      },
+      {
+        badge: 'Сценарий 03 · Samsung One UI',
+        signal: '● Быстрый переключатель',
+        title: 'Интернет со второго телефона в одно касание',
+        desc: 'Нужен Wi-Fi на ноутбуке или основном телефоне? Нажмите круглую кнопку «Точка доступа» — второй смартфон Samsung включит модем и начнёт раздавать сеть из сумки.',
+        rows: [
+          { label: 'Мобильные данные', value: 'Включены (LTE 4/4)' },
+          { label: 'Точка доступа Wi-Fi', value: 'Активна по команде с Client' },
+        ],
+        highlightCode: 'WI-FI ON',
+        highlightChip: 'Батарея SIM-шлюза: 84%',
+      },
+    ],
+    en: [
+      {
+        badge: 'Scenario 01 · Traveling',
+        signal: '● Bluetooth Active',
+        title: 'Bank codes without swapping SIM cards',
+        desc: 'Paying online while abroad? Your secondary phone inside your backpack receives the SMS from your home bank and puts the ready-to-paste code straight on your main screen.',
+        rows: [
+          { label: 'Sender', value: 'International Bank' },
+          { label: 'Message', value: 'Purchase approval $124.50' },
+        ],
+        highlightCode: '839 104',
+        highlightChip: 'Copied to clipboard',
+      },
+      {
+        badge: 'Scenario 02 · At Work',
+        signal: '● Quiet Control',
+        title: 'Handle your work SIM without touching a second phone',
+        desc: 'An unknown caller rings your work phone during a meeting — dismiss the call in one tap from your daily phone or reply by SMS without pulling out the second device.',
+        rows: [
+          { label: 'Incoming call', value: '+1 (415) 555-0192' },
+          { label: 'Action', value: 'Remote decline & log in missed calls' },
+        ],
+        highlightCode: 'DECLINED',
+        highlightChip: 'Missed badge updated',
+      },
+      {
+        badge: 'Scenario 03 · Samsung One UI',
+        signal: '● Quick Toggle',
+        title: 'Share hotspot from your bag in a single tap',
+        desc: 'Need mobile Wi-Fi for your laptop? Tap the round Hotspot tile on your main screen and your Samsung SIM phone turns on tethering without leaving your backpack.',
+        rows: [
+          { label: 'Mobile Data', value: 'Enabled (LTE 4/4)' },
+          { label: 'Wi-Fi Hotspot', value: 'Active via Client toggle' },
+        ],
+        highlightCode: 'WI-FI ON',
+        highlightChip: 'SIM Phone battery: 84%',
+      },
+    ],
+  };
+
+  const contactBookSamples = {
+    ru: {
+      client: [
+        { name: 'Алексей (Работа)', phone: '+7 903 •••-12-08' },
+        { name: 'Мария', phone: '+7 916 •••-44-91' },
+      ],
+      server: [
+        { name: 'Курьер Доставка', phone: '+7 926 •••-77-15' },
+        { name: 'Отель Стамбул', phone: '+90 532 •••-84-20' },
+      ],
+    },
+    en: {
+      client: [
+        { name: 'Alex (Work)', phone: '+1 415 •••-1208' },
+        { name: 'Maria', phone: '+1 650 •••-4491' },
+      ],
+      server: [
+        { name: 'Delivery Courier', phone: '+44 7700 •••-715' },
+        { name: 'Istanbul Hotel', phone: '+90 532 •••-8420' },
+      ],
     },
   };
 
@@ -455,6 +575,8 @@
   };
 
   let currentLang = 'ru';
+  let currentScenario = 0;
+  let currentBook = 'client';
   let currentProtoStep = 0;
   let currentFrameSeg = 'dir';
   let pskVisible = false;
@@ -477,6 +599,27 @@
   const cliToast = document.getElementById('cliToast');
   const tileMobileData = document.getElementById('tileMobileData');
   const tileHotspot = document.getElementById('tileHotspot');
+  const btnFeatureDataToggle = document.getElementById('btnFeatureDataToggle');
+  const featureDataSwitch = document.getElementById('featureDataSwitch');
+  const btnFeatureHotspotToggle = document.getElementById('btnFeatureHotspotToggle');
+  const featureHotspotSwitch = document.getElementById('featureHotspotSwitch');
+  const btnFeatureCallDecline = document.getElementById('btnFeatureCallDecline');
+
+  function syncToggleUI() {
+    tileMobileData?.classList.toggle('active', mobileDataActive);
+    tileMobileData?.setAttribute('aria-pressed', String(mobileDataActive));
+    featureDataSwitch?.classList.toggle('on', mobileDataActive);
+    btnFeatureDataToggle?.setAttribute('aria-pressed', String(mobileDataActive));
+
+    tileHotspot?.classList.toggle('active', hotspotActive);
+    tileHotspot?.setAttribute('aria-pressed', String(hotspotActive));
+    featureHotspotSwitch?.classList.toggle('on', hotspotActive);
+    btnFeatureHotspotToggle?.setAttribute('aria-pressed', String(hotspotActive));
+
+    if (cliDataState) {
+      cliDataState.textContent = mobileDataActive ? 'LTE' : 'OFF';
+    }
+  }
 
   function triggerTunnelPulse(direction, label) {
     if (!tunnelPulseDot) return;
@@ -635,10 +778,21 @@
     );
   });
 
+  // Interactive Call Mini-Pill inside Bento Card 3
+  let callPillTimer = null;
+  btnFeatureCallDecline?.addEventListener('click', () => {
+    btnFeatureCallDecline.classList.add('is-declined');
+    btnFeatureCallDecline.textContent = translations[currentLang].call_mini_declined;
+    if (callPillTimer) clearTimeout(callPillTimer);
+    callPillTimer = setTimeout(() => {
+      btnFeatureCallDecline.classList.remove('is-declined');
+      btnFeatureCallDecline.textContent = translations[currentLang].call_mini_decline;
+    }, 1800);
+  });
+
   function toggleHotspot() {
     hotspotActive = !hotspotActive;
-    tileHotspot?.classList.toggle('active', hotspotActive);
-    tileHotspot?.setAttribute('aria-pressed', String(hotspotActive));
+    syncToggleUI();
     triggerTunnelPulse(
       'left',
       currentLang === 'ru' ? 'Точка доступа' : 'Wi-Fi Hotspot'
@@ -664,8 +818,7 @@
 
   function toggleMobileData() {
     mobileDataActive = !mobileDataActive;
-    tileMobileData?.classList.toggle('active', mobileDataActive);
-    tileMobileData?.setAttribute('aria-pressed', String(mobileDataActive));
+    syncToggleUI();
     triggerTunnelPulse(
       'left',
       currentLang === 'ru' ? 'Интернет' : 'Mobile Data'
@@ -677,9 +830,6 @@
         ? (currentLang === 'ru' ? 'Мобильный интернет включён' : 'Mobile data turned on')
         : (currentLang === 'ru' ? 'Мобильный интернет выключен' : 'Mobile data turned off')
     );
-    if (cliDataState) {
-      cliDataState.textContent = mobileDataActive ? '🌐 LTE' : '🌐 OFF';
-    }
     showClientToast(
       mobileDataActive
         ? (currentLang === 'ru' ? 'Интернет включён' : 'Mobile Data On')
@@ -689,9 +839,11 @@
 
   document.getElementById('btnSimHotspot')?.addEventListener('click', toggleHotspot);
   tileHotspot?.addEventListener('click', toggleHotspot);
+  btnFeatureHotspotToggle?.addEventListener('click', toggleHotspot);
   tileMobileData?.addEventListener('click', toggleMobileData);
+  btnFeatureDataToggle?.addEventListener('click', toggleMobileData);
 
-  // PSK Show/Hide toggle on Server phone
+  // PSK Show/Hide toggle
   btnTogglePsk?.addEventListener('click', () => {
     pskVisible = !pskVisible;
     if (srvPskValue) {
@@ -700,6 +852,72 @@
     btnTogglePsk.textContent = pskVisible
       ? translations[currentLang].srv_btn_hide
       : translations[currentLang].srv_btn_show;
+  });
+
+  // Interactive Scenario Switcher (#use-cases)
+  const scenarioBadge = document.getElementById('scenarioBadge');
+  const scenarioSignalPill = document.getElementById('scenarioSignalPill');
+  const scenarioStageTitle = document.getElementById('scenarioStageTitle');
+  const scenarioStageDesc = document.getElementById('scenarioStageDesc');
+  const scenarioVisualCard = document.getElementById('scenarioVisualCard');
+
+  function renderScenario(idx) {
+    currentScenario = idx;
+    const item = scenarioData[currentLang][idx];
+    if (!item) return;
+    if (scenarioBadge) scenarioBadge.textContent = item.badge;
+    if (scenarioSignalPill) scenarioSignalPill.textContent = item.signal;
+    if (scenarioStageTitle) scenarioStageTitle.textContent = item.title;
+    if (scenarioStageDesc) scenarioStageDesc.textContent = item.desc;
+    if (scenarioVisualCard) {
+      scenarioVisualCard.innerHTML = `
+        ${item.rows
+          .map(
+            (r) => `
+          <div class="sv-row">
+            <span class="sv-label">${r.label}</span>
+            <span>${r.value}</span>
+          </div>`
+          )
+          .join('')}
+        <div class="sv-highlight">
+          <code class="sv-code">${item.highlightCode}</code>
+          <span class="sv-chip">${item.highlightChip}</span>
+        </div>
+      `;
+    }
+    document.querySelectorAll('.scenario-tab').forEach((tab, i) => {
+      const active = i === idx;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
+  }
+
+  document.querySelectorAll('.scenario-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      renderScenario(Number(tab.getAttribute('data-scenario') || 0));
+    });
+  });
+
+  // Interactive Contacts Switcher Micro-Widget
+  const contactsMiniList = document.getElementById('contactsMiniList');
+  function renderContactsMini(book) {
+    currentBook = book === 'server' ? 'server' : 'client';
+    const rows = contactBookSamples[currentLang][currentBook];
+    if (contactsMiniList && rows) {
+      contactsMiniList.innerHTML = rows
+        .map((c) => `<div class="contacts-mini-row"><span>${c.name}</span><code>${c.phone}</code></div>`)
+        .join('');
+    }
+    document.querySelectorAll('.contacts-seg-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-book') === currentBook);
+    });
+  }
+
+  document.querySelectorAll('.contacts-seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      renderContactsMini(btn.getAttribute('data-book') || 'client');
+    });
   });
 
   // Interactive OTP Extractor Sandbox
@@ -767,7 +985,6 @@
     setTechDrawerOpen(!isExpanded);
   });
 
-  // Auto-open deep technical drawer when clicking "Под капотом" links or loading with #under-the-hood
   document.querySelectorAll('.nav-tech-link').forEach((link) => {
     link.addEventListener('click', () => {
       setTechDrawerOpen(true);
@@ -778,7 +995,7 @@
     setTechDrawerOpen(true);
   }
 
-  // Protocol Explorer Tabs (inside Under-the-hood)
+  // Protocol Explorer Tabs
   const protoTitle = document.getElementById('protoTitle');
   const protoDesc = document.getElementById('protoDesc');
   const protoCode = document.getElementById('protoCode');
@@ -805,7 +1022,7 @@
     });
   });
 
-  // Security Frame Segment Switcher (inside Under-the-hood)
+  // Security Frame Segment Switcher
   const frameDetailTitle = document.getElementById('frameDetailTitle');
   const frameDetailDesc = document.getElementById('frameDetailDesc');
 
@@ -902,6 +1119,8 @@
       btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
     });
 
+    renderScenario(currentScenario);
+    renderContactsMini(currentBook);
     renderProtocolStep(currentProtoStep);
     renderFrameSegment(currentFrameSeg);
     updateOtpSandbox();
@@ -917,9 +1136,9 @@
     });
   });
 
-  // Subtle Scroll Reveal (only for visible consumer sections, never inside collapsed drawer)
+  // Subtle Scroll Reveal
   const revealTargets = document.querySelectorAll(
-    '.bento-card, .case-card, .metric-card, #privacy .sec-card, .step-item, .dl-card'
+    '.bento-card, .scenario-stage, .setup-step, .dl-card'
   );
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(
@@ -931,7 +1150,7 @@
           }
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.1 }
     );
     revealTargets.forEach((el) => {
       el.classList.add('reveal');
@@ -939,6 +1158,35 @@
     });
   }
 
+  // Smooth scroll for in-page navigation without polluting the URL bar
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', (e) => {
+      const href = anchor.getAttribute('href');
+      if (!href || href === '#') return;
+      e.preventDefault();
+
+      if (href === '#under-the-hood') {
+        setTechDrawerOpen(true);
+      }
+
+      if (href === '#top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const target = document.querySelector(href);
+        if (target) {
+          requestAnimationFrame(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+      }
+
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    });
+  });
+
   // Initialize dynamic views
+  syncToggleUI();
   setLanguage('ru');
 })();
