@@ -1947,6 +1947,40 @@ textarea {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-secondary);
+  margin-top: auto;
+}
+
+.btn-disabled,
+.btn-disabled:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-hairline);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.dl-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-hairline);
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+.dl-notice a {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.dl-notice a:hover {
+  text-decoration: underline;
 }
 
 .dl-meta span {

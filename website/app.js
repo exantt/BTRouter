@@ -144,7 +144,9 @@
       dl_server_desc:
         'Устанавливается на смартфон с нужной SIM-картой: тихо работает в фоне, пересылает СМС и звонки только вашему телефону и следит за зарядом.',
       dl_ver_badge: 'Версия 1.1.0',
-      dl_btn_releases: 'Скачать на GitHub Releases',
+      dl_btn_unavailable: 'Релиз пока недоступен',
+      dl_notice_text: 'Готовые APK-файлы ещё не опубликованы — первый публичный релиз скоро появится на GitHub.',
+      dl_notice_link: 'Открыть страницу Releases →',
       tech_eyebrow: 'ПОД КАПОТОМ · ДЛЯ СПЕЦИАЛИСТОВ',
       tech_title: 'Архитектура, криптография и сборка из исходного кода',
       tech_desc:
@@ -322,7 +324,9 @@
       dl_server_desc:
         'Install on the phone carrying your SIM card: forwards texts and calls exclusively to your main phone and reports battery & signal.',
       dl_ver_badge: 'Version 1.1.0',
-      dl_btn_releases: 'Download on GitHub Releases',
+      dl_btn_unavailable: 'Release not available yet',
+      dl_notice_text: 'Prebuilt APK files are not published yet — the first public release will appear on GitHub soon.',
+      dl_notice_link: 'View Releases page →',
       tech_eyebrow: 'UNDER THE HOOD · FOR DEVELOPERS',
       tech_title: 'Architecture, cryptography & building from source',
       tech_desc:
