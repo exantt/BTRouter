@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BTRouter — СМС, коды и звонки со второго телефона по Bluetooth</title>
+  <meta name="description" content="BTRouter позволяет читать и отправлять СМС, мгновенно копировать банковские коды, видеть звонки и управлять точкой доступа второго телефона напрямую по Bluetooth — без интернета и облачных сервисов." />
+  <meta name="theme-color" content="#06090F" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="glow glow-cyan"></div>
+    <div class="glow glow-emerald"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <!-- Sticky Glass Header -->
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a href="#top" class="brand" aria-label="BTRouter">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="11" fill="#0B1320" stroke="rgba(255,255,255,0.12)" />
+            <circle cx="15" cy="20" r="10" fill="rgba(0,207,255,0.08)" stroke="#00CFFF" stroke-opacity="0.35" stroke-width="1.2" />
+            <path d="M15 11V29M15 11L21 16L10 24M15 29L21 24L10 16" stroke="#00CFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M24 16.5C26 18.2 26 21.8 24 23.5" stroke="#00E676" stroke-width="2" stroke-linecap="round" />
+            <path d="M27.5 13.5C30.8 16.8 30.8 23.2 27.5 26.5" stroke="#00E676" stroke-opacity="0.65" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">BTRouter</span>
+          <span class="brand-badge">v1.1.0</span>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="#use-cases" data-i18n="nav_use_cases">Для кого</a>
+        <a href="#features" data-i18n="nav_features">Возможности</a>
+        <a href="#setup" data-i18n="nav_setup">Как настроить</a>
+        <a href="#download" data-i18n="nav_download">Скачать</a>
+        <a href="#under-the-hood" class="nav-tech-link" data-i18n="nav_tech">Под капотом</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="lang-switch" role="group" aria-label="Language switcher">
+          <button type="button" class="lang-btn active" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+        <a href="https://github.com/exantt/BTRouter" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm github-cta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-drawer" id="mobileDrawer" hidden>
+      <a href="#use-cases" data-i18n="nav_use_cases">Для кого</a>
+      <a href="#features" data-i18n="nav_features">Возможности</a>
+      <a href="#setup" data-i18n="nav_setup">Как настроить</a>
+      <a href="#download" data-i18n="nav_download">Скачать</a>
+      <a href="#under-the-hood" class="nav-tech-link" data-i18n="nav_tech">Под капотом</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="status-pill">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span data-i18n="hero_pill">Прямая связь по Bluetooth · Без интернета и облаков · Бесплатно</span>
+          </div>
+
+          <h1 class="hero-title" data-i18n="hero_title">
+            Второй телефон в рюкзаке — все СМС и звонки у вас в руках
+          </h1>
+
+          <p class="hero-subtitle" data-i18n="hero_subtitle">
+            BTRouter соединяет ваш основной смартфон со вторым телефоном, где стоит нужная SIM-карта. Читайте и отправляйте СМС, копируйте коды из банков в одно касание, сбрасывайте лишние звонки и включайте раздачу Wi-Fi удалённо — даже без интернета.
+          </p>
+
+          <div class="hero-ctas">
+            <a href="#download" class="btn btn-primary">
+              <span data-i18n="hero_cta_download">Скачать приложение</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 5v14M19 12l-7 7-7-7"/>
+              </svg>
+            </a>
+            <a href="#demo-controls" class="btn btn-secondary" data-i18n="hero_cta_demo">
+              Посмотреть в действии
+            </a>
+          </div>
+
+          <div class="hero-specs">
+            <div class="spec-chip">
+              <span class="spec-dot cyan"></span>
+              <span data-i18n="hero_chip_1">Для Android 10 и новее</span>
+            </div>
+            <div class="spec-chip">
+              <span class="spec-dot emerald"></span>
+              <span data-i18n="hero_chip_2">Надёжное шифрование</span>
+            </div>
+            <div class="spec-chip">
+              <span class="spec-dot neutral"></span>
+              <span data-i18n="hero_chip_3">Работает без интернета</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Dual-Device Showcase -->
+        <div class="hero-showcase">
+          <div class="devices-stage">
+            <!-- Server Phone -->
+            <div class="phone-wrap phone-server-wrap">
+              <div class="device-tag device-tag-cyan">
+                <svg class="device-tag-icon" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="54" cy="54" r="36" fill="#0A1F33" stroke="#00CFFF" stroke-opacity="0.4" stroke-width="2" />
+                  <path d="M65 42 A14 14 0 0 1 65 66" stroke="#00CFFF" stroke-width="3" stroke-linecap="round" />
+                  <path d="M70 37 A21 21 0 0 1 70 71" stroke="#00CFFF" stroke-width="2.4" stroke-linecap="round" stroke-opacity="0.6" />
+                  <path d="M51 35V73M51 35L62 46L40 62M51 73L62 62L40 46" stroke="#00CFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M72 74H82V86H72V74Z" fill="#00CFFF" />
+                  <path d="M72 74H76V78H72V74Z" fill="#0D2640" />
+                </svg>
+                <span>BTRouterServer</span>
+                <span class="device-role" data-i18n="role_server">Телефон с SIM</span>
+              </div>
+
+              <div class="phone-frame phone-server">
+                <div class="phone-notch"></div>
+                <div class="phone-screen server-screen">
+                  <div class="app-bar-server">
+                    <span class="app-bar-title" data-i18n="srv_title">Телефон с SIM</span>
+                    <span class="app-tabs-mini">
+                      <span class="tab-mini active" data-i18n="srv_tab_main">ГЛАВНАЯ</span>
+                      <span class="tab-mini" data-i18n="srv_tab_settings">НАСТРОЙКИ</span>
+                    </span>
+                  </div>
+
+                  <div class="srv-card">
+                    <div class="srv-card-head">
+                      <span class="srv-label" data-i18n="srv_gateway_status">СОСТОЯНИЕ</span>
+                      <span class="srv-badge-online" id="srvConnBadge" data-i18n="srv_connected">● ПОДКЛЮЧЁН</span>
+                    </div>
+                    <div class="srv-state-text" id="srvStateText" data-i18n="srv_state_idle">
+                      Готов передавать СМС и звонки
+                    </div>
+                  </div>
+
+                  <div class="srv-card">
+                    <div class="srv-label" data-i18n="srv_security_label">ДОСТУП ТОЛЬКО ДЛЯ ВАС</div>
+                    <div class="srv-mac-row">
+                      <span class="mac-chip" data-i18n="srv_trusted_phone">Подключён ваш смартфон</span>
+                      <span class="allow-pill" data-i18n="srv_trusted_badge">СВОЙ</span>
+                    </div>
+                    <div class="srv-psk-label" data-i18n="srv_psk_label">СЕКРЕТНЫЙ КОД ДОСТУПА</div>
+                    <div class="srv-psk-box">
+                      <code id="srvPskValue">••••-••••-••••-••••</code>
+                      <button type="button" class="mini-btn" id="btnTogglePsk" data-i18n="srv_btn_show">Показать</button>
+                    </div>
+                  </div>
+
+                  <div class="srv-card srv-log-card">
+                    <div class="srv-label" data-i18n="srv_log_label">ПОСЛЕДНИЕ СОБЫТИЯ</div>
+                    <div class="srv-log-list" id="srvLogList">
+                      <div class="srv-log-item">
+                        <span class="log-tag cyan">OK</span>
+                        <span data-i18n="log_init_1">Заряд 84%, сеть и интернет в норме</span>
+                      </div>
+                      <div class="srv-log-item">
+                        <span class="log-tag emerald">BT</span>
+                        <span data-i18n="log_init_2">Защищённая связь с телефоном открыта</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Friendly Bluetooth Bridge -->
+            <div class="rfcomm-tunnel" id="rfcommTunnel" aria-label="Encrypted Bluetooth Link">
+              <div class="tunnel-meta-top">
+                <span class="tunnel-proto" data-i18n="tunnel_title">Bluetooth</span>
+                <span class="tunnel-cipher" data-i18n="tunnel_sub">Зашифровано</span>
+              </div>
+              <div class="tunnel-track">
+                <div class="tunnel-line"></div>
+                <div class="tunnel-pulse-dot" id="tunnelPulseDot"></div>
+              </div>
+              <div class="tunnel-packet-label" id="tunnelPacketLabel" data-i18n="tunnel_idle">Прямая связь</div>
+            </div>
+
+            <!-- Client Phone -->
+            <div class="phone-wrap phone-client-wrap">
+              <div class="device-tag device-tag-emerald">
+                <svg class="device-tag-icon" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M46 30A11 11 0 0 1 62 30" stroke="#00E676" stroke-width="3" stroke-linecap="round" />
+                  <path d="M41 24A19 19 0 0 1 67 24" stroke="#00E676" stroke-opacity="0.6" stroke-width="2.4" stroke-linecap="round" />
+                  <rect x="35" y="34" width="38" height="55" rx="4" fill="#1A3A26" stroke="#00E676" stroke-width="2" />
+                  <rect x="39" y="40" width="30" height="40" fill="#0A1F10" />
+                  <path d="M54 48V72M54 48L62 55L46 65M54 72L62 65L46 55" stroke="#00E676" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>BTRouterClient</span>
+                <span class="device-role" data-i18n="role_client">Основной телефон</span>
+              </div>
+
+              <div class="phone-frame phone-client">
+                <div class="phone-notch"></div>
+                <div class="phone-screen client-screen">
+                  <!-- Telemetry Card -->
+                  <div class="cli-status-card">
+                    <div class="cli-status-top">
+                      <span class="cli-gw-label" data-i18n="cli_gw_label">ТЕЛЕФОН С SIM</span>
+                      <span class="cli-online" data-i18n="cli_online">● В СЕТИ</span>
+                    </div>
+                    <div class="cli-telemetry-row">
+                      <span>🔋 84% ⚡</span>
+                      <span>📶 MTS 4/4</span>
+                      <span id="cliDataState">🌐 LTE</span>
+                    </div>
+                  </div>
+
+                  <!-- Quick Toggles Row -->
+                  <div class="cli-toggles-row">
+                    <button type="button" class="cli-quick-tile active" id="tileMobileData" aria-pressed="true">
+                      <span class="tile-circle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                        </svg>
+                      </span>
+                      <span class="tile-label" data-i18n="cli_tile_data">Интернет</span>
+                    </button>
+
+                    <button type="button" class="cli-quick-tile" id="tileHotspot" aria-pressed="false">
+                      <span class="tile-circle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                          <circle cx="12" cy="19" r="1.2" fill="currentColor"/>
+                        </svg>
+                      </span>
+                      <span class="tile-label" data-i18n="cli_tile_hotspot">Точка доступа</span>
+                    </button>
+                  </div>
+
+                  <div class="cli-status-sub" id="cliStatusLine" data-i18n="cli_status_ready">Соединение активно · Всё защищено</div>
+
+                  <!-- Incoming Call Banner -->
+                  <div class="cli-call-banner" id="cliCallBanner" hidden>
+                    <div class="call-title" data-i18n="cli_call_title">Входящий вызов на второй телефон</div>
+                    <div class="call-number" id="cliCallerNumber">+7 (916) 555-01-42</div>
+                    <button type="button" class="btn-decline" id="btnDeclineCall" data-i18n="cli_btn_decline">СБРОСИТЬ</button>
+                    <div class="call-hint" data-i18n="cli_call_hint">Ответить на звонок можно только на втором телефоне</div>
+                  </div>
+
+                  <!-- Chats Container -->
+                  <div class="cli-chats-panel">
+                    <div class="cli-chat-list" id="cliChatList">
+                      <div class="chat-item unread">
+                        <div class="chat-avatar avatar-bank">Т</div>
+                        <div class="chat-body">
+                          <div class="chat-head">
+                            <span class="chat-sender">T-Bank</span>
+                            <span class="chat-time">19:02</span>
+                          </div>
+                          <div class="chat-preview">Код подтверждения: 391042. Никому не сообщайте.</div>
+                        </div>
+                        <div class="chat-meta">
+                          <span class="unread-badge">1</span>
+                        </div>
+                      </div>
+
+                      <div class="chat-item">
+                        <div class="chat-avatar avatar-blue">Г</div>
+                        <div class="chat-body">
+                          <div class="chat-head">
+                            <span class="chat-sender">Gosuslugi</span>
+                            <span class="chat-time">17:40</span>
+                          </div>
+                          <div class="chat-preview">Одноразовый пароль для входа: 774190</div>
+                        </div>
+                      </div>
+
+                      <div class="chat-item">
+                        <div class="chat-avatar avatar-teal">D</div>
+                        <div class="chat-body">
+                          <div class="chat-head">
+                            <span class="chat-sender">DenizBank</span>
+                            <span class="chat-time">14:15</span>
+                          </div>
+                          <div class="chat-preview">258410 sifreniz ile islem onaylayin. B002</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Floating Bottom Controls -->
+                    <div class="cli-fabs">
+                      <div class="fab-missed-wrap" title="Пропущенные вызовы">
+                        <button type="button" class="fab-btn fab-missed" id="fabMissedBtn" aria-label="Missed calls">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 5L12 12L5 5"/>
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+                          </svg>
+                        </button>
+                        <span class="fab-badge" id="missedCallsBadge">2</span>
+                      </div>
+                      <span class="cli-version-tiny">v1.1.0</span>
+                      <button type="button" class="fab-btn fab-compose" id="fabComposeBtn" aria-label="New SMS">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          <path d="M12 8v6M9 11h6"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Toast Overlay inside Client -->
+                  <div class="cli-toast" id="cliToast" hidden>Код 482915 скопирован — можно вставлять</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Demo Controls -->
+          <div class="demo-controls-bar" id="demo-controls">
+            <span class="demo-controls-label" data-i18n="demo_label">Попробуйте сами:</span>
+            <div class="demo-buttons">
+              <button type="button" class="demo-btn" id="btnSimOtp">
+                <span>📩</span>
+                <span data-i18n="demo_btn_otp">Код из банка</span>
+              </button>
+              <button type="button" class="demo-btn" id="btnSimCall">
+                <span>📞</span>
+                <span data-i18n="demo_btn_call">Входящий звонок</span>
+              </button>
+              <button type="button" class="demo-btn" id="btnSimHotspot">
+                <span>📡</span>
+                <span data-i18n="demo_btn_hotspot">Раздать интернет</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Everyday Benefits Strip -->
+    <section class="metrics-strip">
+      <div class="container metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value cyan" data-i18n="val_1_title">Без облаков</div>
+          <div class="metric-label" data-i18n="val_1_desc">Сообщения идут напрямую между телефонами и нигде не хранятся в сети</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value emerald" data-i18n="val_2_title">Коды за секунду</div>
+          <div class="metric-label" data-i18n="val_2_desc">Сам находит код из банковского СМС и сразу копирует его в буфер</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" data-i18n="val_3_title">Всё на виду</div>
+          <div class="metric-label" data-i18n="val_3_desc">Заряд батареи, уровень сигнала и звонки второго телефона в одном окне</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" data-i18n="val_4_title">Бесплатно</div>
+          <div class="metric-label" data-i18n="val_4_desc">Никаких подписок, рекламы, регистраций и скрытых ограничений</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="section section-alt" id="use-cases">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow" data-i18n="cases_eyebrow">ДЛЯ ЧЕГО ЭТО НУЖНО</span>
+          <h2 class="section-title" data-i18n="cases_title">Удобно каждый день и в поездках</h2>
+          <p class="section-desc" data-i18n="cases_desc">
+            Не носите два телефона в руках и не переставляйте постоянно SIM-карты — пусть второй смартфон спокойно лежит в рюкзаке, кармане или дома.
+          </p>
+        </div>
+
+        <div class="cases-grid">
+          <article class="case-card">
+            <div class="icon-box cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <h3 data-i18n="case_1_title">В поездках и за границей</h3>
+            <p data-i18n="case_1_desc">
+              Оставьте домашнюю или зарубежную SIM-карту во втором телефоне в сумке и получайте все коды подтверждения от банков и сервисов прямо на основной экран.
+            </p>
+          </article>
+
+          <article class="case-card">
+            <div class="icon-box emerald">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+            </div>
+            <h3 data-i18n="case_2_title">Рабочий и личный номер</h3>
+            <p data-i18n="case_2_desc">
+              Не доставайте второй смартфон ради каждого уведомления: переписывайтесь по СМС, сбрасывайте спам-звонки и смотрите пропущенные с одного устройства.
+            </p>
+          </article>
+
+          <article class="case-card">
+            <div class="icon-box crimson">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <circle cx="12" cy="20" r="1" fill="currentColor"/>
+              </svg>
+            </div>
+            <h3 data-i18n="case_3_title">Интернет и раздача Wi-Fi</h3>
+            <p data-i18n="case_3_desc">
+              Если второй телефон — Samsung, включайте на нём мобильный интернет и точку доступа Wi-Fi в одно касание с основного телефона, не доставая его из рюкзака.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Features Section -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow" data-i18n="features_eyebrow">ВОЗМОЖНОСТИ</span>
+          <h2 class="section-title" data-i18n="features_title">Всё, к чему вы привыкли — на главном телефоне</h2>
+          <p class="section-desc" data-i18n="features_desc">
+            Простой и понятный интерфейс с чатами, быстрым копированием кодов и контролем состояния второго телефона.
+          </p>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Wide Card 1: SMS Messenger + Interactive Code Tester -->
+          <article class="bento-card bento-wide">
+            <div class="bento-head">
+              <div class="icon-box emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 data-i18n="feat_sms_title">Удобные СМС-чаты и быстрые коды из банков</h3>
+                <p data-i18n="feat_sms_desc">
+                  Вся переписка в одном списке: важные чаты можно закрепить сверху, лишние — убрать в архив без звука. Одноразовые коды сразу появляются в уведомлении с кнопкой «Скопировать» или копируются автоматически.
+                </p>
+              </div>
+            </div>
+
+            <div class="otp-sandbox">
+              <div class="otp-sandbox-top">
+                <span class="otp-sandbox-label" data-i18n="otp_tester_title">Проверьте, как приложение находит код в тексте:</span>
+                <div class="otp-presets">
+                  <button type="button" class="preset-chip active" data-preset="ru" data-i18n="preset_ru">Российский банк</button>
+                  <button type="button" class="preset-chip" data-preset="en" data-i18n="preset_en">Зарубежный банк</button>
+                  <button type="button" class="preset-chip" data-preset="tr" data-i18n="preset_tr">Турецкий банк</button>
+                </div>
+              </div>
+              <textarea id="otpInput" class="otp-textarea" rows="2" aria-label="Пример СМС для поиска кода">MIR-4412 19.11.26 Оплата 1 490.00 RUB. Код подтверждения: 649208. Никому не говорите код.</textarea>
+              <div class="otp-result-row">
+                <div class="otp-extracted">
+                  <span class="otp-res-label" data-i18n="otp_found_label">Найденный код:</span>
+                  <code class="otp-code-pill" id="otpExtractedCode">649208</code>
+                </div>
+                <span class="otp-ignored-hint" id="otpIgnoredHint" data-i18n="otp_ignored_hint">Не путает код с номером карты (*4412), датой или суммой покупки</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2: Battery & Signal -->
+          <article class="bento-card">
+            <div class="icon-box cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <h3 data-i18n="feat_telemetry_title">Заряд и связь всегда перед глазами</h3>
+            <p data-i18n="feat_telemetry_desc">
+              В шапке приложения и в шторке уведомлений всегда видно, сколько заряда осталось на втором телефоне, ловит ли он сеть и включён ли мобильный интернет.
+            </p>
+            <div class="mini-telemetry-widget">
+              <span>🔋 84% ⚡</span>
+              <span>📶 4/4</span>
+              <span>🌐 LTE ON</span>
+            </div>
+          </article>
+
+          <!-- Card 3: Calls & Missed Log -->
+          <article class="bento-card">
+            <div class="icon-box crimson">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </div>
+            <h3 data-i18n="feat_calls_title">Звонки и пропущенные</h3>
+            <p data-i18n="feat_calls_desc">
+              Узнавайте о входящем звонке сразу и сбрасывайте ненужные вызовы прямо с основного телефона. Пропущенные сохраняются в отдельный список со счётчиком.
+            </p>
+          </article>
+
+          <!-- Card 4: Dual Address Book -->
+          <article class="bento-card">
+            <div class="icon-box emerald">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <h3 data-i18n="feat_contacts_title">Контакты с обоих телефонов</h3>
+            <p data-i18n="feat_contacts_desc">
+              Пишите людям из записной книжки любого из двух смартфонов — переключение между адресными книгами и недавними номерами работает в один тап.
+            </p>
+          </article>
+
+          <!-- Card 5: Samsung One UI Quick Toggles -->
+          <article class="bento-card">
+            <div class="icon-box cyan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="6"/>
+                <circle cx="16" cy="12" r="3" fill="currentColor"/>
+              </svg>
+            </div>
+            <h3 data-i18n="feat_samsung_title">Точка доступа в один клик (Samsung)</h3>
+            <p data-i18n="feat_samsung_desc">
+              Удобные круглые кнопки прямо на главном экране позволяют удалённо включать интернет и раздачу Wi-Fi на втором телефоне Samsung.
+            </p>
+          </article>
+
+          <!-- Card 6: Reliability (Full Width) -->
+          <article class="bento-card bento-wide-sm">
+            <div class="icon-box neutral">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </div>
+            <div>
+              <h3 data-i18n="feat_sync_title">Ни одно сообщение не потеряется, даже если вы отошли</h3>
+              <p data-i18n="feat_sync_desc">
+                Если телефоны временно потеряли связь, всё накопившееся автоматически догрузится при возвращении в радиус Bluetooth. А после перезагрузки приложение само запустится заново без лишних напоминаний.
+              </p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Plain-Language Privacy Reassurance -->
+    <section class="section section-alt" id="privacy">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow" data-i18n="priv_eyebrow">ПРИВАТНОСТЬ И ЗАЩИТА</span>
+          <h2 class="section-title" data-i18n="priv_title">Ваши сообщения остаются только между вами и вашими телефонами</h2>
+        </div>
+
+        <div class="security-grid">
+          <div class="sec-card">
+            <span class="sec-kicker" data-i18n="priv_1_tag">ТОЛЬКО НАПРЯМУЮ</span>
+            <h3 data-i18n="priv_1_title">Никаких серверов и аккаунтов</h3>
+            <p data-i18n="priv_1_desc">
+              Вам не нужно регистрироваться, привязывать почту или доверять личные СМС чужим облакам — данные никуда не уходят с ваших устройств.
+            </p>
+          </div>
+          <div class="sec-card">
+            <span class="sec-kicker" data-i18n="priv_2_tag">ТОЛЬКО СВОИ</span>
+            <h3 data-i18n="priv_2_title">Доступ закрыт для посторонних</h3>
+            <p data-i18n="priv_2_desc">
+              Второй телефон принимает команды только от выбранного вами смартфона и дополнительно проверяет секретный код доступа при каждой встрече.
+            </p>
+          </div>
+          <div class="sec-card">
+            <span class="sec-kicker" data-i18n="priv_3_tag">ШИФРОВАНИЕ</span>
+            <h3 data-i18n="priv_3_title">Переписка под надёжным замком</h3>
+            <p data-i18n="priv_3_desc">
+              Каждое сообщение и событие звонка надёжно зашифровано в пути, а секретные ключи хранятся в защищённой области памяти смартфона.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Setup Guide Section -->
+    <section class="section" id="setup">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow" data-i18n="setup_eyebrow">ПРОСТОЙ СТАРТ</span>
+          <h2 class="section-title" data-i18n="setup_title">Настройка за пару минут</h2>
+        </div>
+
+        <div class="steps-list">
+          <div class="step-item">
+            <span class="step-num">01</span>
+            <div class="step-body">
+              <h3 data-i18n="step1_title">Установите приложение на оба смартфона</h3>
+              <p data-i18n="step1_desc">На телефон с SIM-картой поставьте версию Server, а на ваш основной телефон — версию Client.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">02</span>
+            <div class="step-body">
+              <h3 data-i18n="step2_title">Свяжите телефоны по Bluetooth</h3>
+              <p data-i18n="step2_desc">Как обычные наушники — откройте системные настройки Bluetooth и соедините два телефона в пару.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">03</span>
+            <div class="step-body">
+              <h3 data-i18n="step3_title">Выберите основной телефон на Server</h3>
+              <p data-i18n="step3_desc">Выдайте приложению нужные разрешения (и отключите экономию батареи для стабильной работы), укажите свой телефон и скопируйте секретный ключ.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="step-num">04</span>
+            <div class="step-body">
+              <h3 data-i18n="step4_title">Введите ключ на основном телефоне</h3>
+              <p data-i18n="step4_desc">Откройте настройки в Client, выберите телефон с SIM, вставьте скопированный ключ и нажмите «Сохранить» — связь сразу заработает.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expandable Samsung One UI 5+ Routines Guide -->
+        <div class="samsung-accordion">
+          <button type="button" class="accordion-trigger" id="samsungAccordionBtn" aria-expanded="false" aria-controls="samsungAccordionBody">
+            <span>
+              <strong data-i18n="samsung_acc_title">По желанию: как настроить кнопки «Точка доступа» и «Интернет» (для Samsung)</strong>
+              <small data-i18n="samsung_acc_sub">Работает через встроенные сценарии Samsung One UI 5+</small>
+            </span>
+            <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <div class="accordion-body" id="samsungAccordionBody" hidden>
+            <p class="acc-intro" data-i18n="samsung_acc_intro">
+              На телефоне с SIM (Samsung с One UI 5+) откройте «Настройки → Режимы и сценарии → Сценарии → +», выберите условие «Уведомление получено» от BTRouterServer и добавьте 4 простых сценария по ключевым словам (отключив автовозврат):
+            </p>
+            <div class="keywords-grid">
+              <div class="kw-card">
+                <div class="kw-head">
+                  <code>BTR_HOTSPOT_ON</code>
+                  <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_ON" data-i18n="btn_copy">Копировать</button>
+                </div>
+                <span data-i18n="kw_hotspot_on">Мобильная точка доступа → Вкл.</span>
+              </div>
+              <div class="kw-card">
+                <div class="kw-head">
+                  <code>BTR_HOTSPOT_OFF</code>
+                  <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_OFF" data-i18n="btn_copy">Копировать</button>
+                </div>
+                <span data-i18n="kw_hotspot_off">Мобильная точка доступа → Выкл.</span>
+              </div>
+              <div class="kw-card">
+                <div class="kw-head">
+                  <code>BTR_MOBILE_DATA_ON</code>
+                  <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_ON" data-i18n="btn_copy">Копировать</button>
+                </div>
+                <span data-i18n="kw_data_on">Мобильные данные → Вкл.</span>
+              </div>
+              <div class="kw-card">
+                <div class="kw-head">
+                  <code>BTR_MOBILE_DATA_OFF</code>
+                  <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_OFF" data-i18n="btn_copy">Копировать</button>
+                </div>
+                <span data-i18n="kw_data_off">Мобильные данные → Выкл.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="section section-alt" id="download">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-eyebrow" data-i18n="dl_eyebrow">СКАЧАТЬ v1.1.0</span>
+          <h2 class="section-title" data-i18n="dl_title">Выберите приложение для каждого телефона</h2>
+          <p class="section-desc" data-i18n="dl_desc">
+            Оба установочных файла бесплатны и доступны на странице релизов проекта на GitHub. Подходит для любых смартфонов на Android 10 и выше.
+          </p>
+        </div>
+
+        <div class="download-grid">
+          <div class="dl-card dl-card-emerald">
+            <div class="dl-card-top">
+              <svg class="dl-app-icon" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M46 30A11 11 0 0 1 62 30" stroke="#00E676" stroke-width="2.8" stroke-linecap="round" />
+                <path d="M41 24A19 19 0 0 1 67 24" stroke="#00E676" stroke-opacity="0.6" stroke-width="2.2" stroke-linecap="round" />
+                <rect x="35" y="34" width="38" height="55" rx="4" fill="#1A3A26" stroke="#00E676" stroke-width="1.8" />
+                <rect x="39" y="40" width="30" height="40" fill="#0A1F10" />
+                <path d="M54 48V72M54 48L62 55L46 65M54 72L62 65L46 55" stroke="#00E676" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div>
+                <span class="dl-role" data-i18n="dl_client_role">На ваш основной телефон</span>
+                <h3>BTRouterClient</h3>
+                <span class="dl-sub-tag" data-i18n="dl_client_sub">Приём СМС, кодов и звонков</span>
+              </div>
+            </div>
+            <p data-i18n="dl_client_desc">
+              Устанавливается на смартфон, которым вы пользуетесь каждый день: показывает СМС-чаты, автоматически копирует коды и выводит пропущенные звонки.
+            </p>
+            <div class="dl-meta">
+              <span data-i18n="dl_ver_badge">Версия 1.1.0</span>
+              <span>Android 10+</span>
+            </div>
+            <a href="https://github.com/exantt/BTRouter/releases" target="_blank" rel="noopener noreferrer" class="btn btn-emerald btn-block" data-i18n="dl_btn_releases">
+              Скачать на GitHub Releases
+            </a>
+          </div>
+
+          <div class="dl-card dl-card-cyan">
+            <div class="dl-card-top">
+              <svg class="dl-app-icon" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="54" cy="54" r="36" fill="#0A1F33" stroke="#00CFFF" stroke-opacity="0.4" stroke-width="2" />
+                <path d="M65 42 A14 14 0 0 1 65 66" stroke="#00CFFF" stroke-width="2.8" stroke-linecap="round" />
+                <path d="M70 37 A21 21 0 0 1 70 71" stroke="#00CFFF" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.6" />
+                <path d="M51 35V73M51 35L62 46L40 62M51 73L62 62L40 46" stroke="#00CFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M72 74H82V86H72V74Z" fill="#00CFFF" />
+                <path d="M72 74H76V78H72V74Z" fill="#0D2640" />
+              </svg>
+              <div>
+                <span class="dl-role" data-i18n="dl_server_role">На второй телефон с SIM-картой</span>
+                <h3>BTRouterServer</h3>
+                <span class="dl-sub-tag" data-i18n="dl_server_sub">Работает в фоне и передаёт сигнал</span>
+              </div>
+            </div>
+            <p data-i18n="dl_server_desc">
+              Устанавливается на смартфон с нужной SIM-картой: тихо работает в фоне, пересылает СМС и звонки только вашему телефону и следит за зарядом.
+            </p>
+            <div class="dl-meta">
+              <span data-i18n="dl_ver_badge">Версия 1.1.0</span>
+              <span>Android 10+</span>
+            </div>
+            <a href="https://github.com/exantt/BTRouter/releases" target="_blank" rel="noopener noreferrer" class="btn btn-cyan btn-block" data-i18n="dl_btn_releases">
+              Скачать на GitHub Releases
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deep Technical Under-the-Hood Section (for developers & enthusiasts) -->
+    <section class="section tech-deep-dive" id="under-the-hood">
+      <div class="container">
+        <div class="tech-banner">
+          <div class="tech-banner-copy">
+            <span class="section-eyebrow" data-i18n="tech_eyebrow">ПОД КАПОТОМ · ДЛЯ СПЕЦИАЛИСТОВ</span>
+            <h2 class="section-title tech-title" data-i18n="tech_title">Архитектура, криптография и сборка из исходного кода</h2>
+            <p class="section-desc" data-i18n="tech_desc">
+              Этот раздел предназначен для разработчиков и тех, кто хочет детально изучить внутреннее устройство протокола BtProtocol, схему шифрования и команды сборки.
+            </p>
+          </div>
+          <button type="button" class="btn btn-secondary tech-toggle-btn" id="btnToggleTechDrawer" aria-expanded="false" aria-controls="techDrawerContent">
+            <span id="techToggleLabel" data-i18n="tech_btn_open">Открыть технические подробности</span>
+            <svg class="acc-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="tech-drawer-content" id="techDrawerContent" hidden>
+          <!-- Architecture Diagram -->
+          <div class="tech-block">
+            <h3 class="tech-block-title" data-i18n="arch_title">Архитектура транспорта (Bluetooth Classic RFCOMM)</h3>
+            <div class="arch-diagram">
+              <div class="arch-node arch-node-emerald">
+                <div class="arch-node-badge">com.exantt.btrouterclient</div>
+                <h4>BTRouterClient</h4>
+                <ul>
+                  <li data-i18n="arch_c_1">Foreground-служба BTRouterClientService</li>
+                  <li data-i18n="arch_c_2">SQLite-история (btrouter_chats.db) и очередь без связи (до 20 СМС, TTL 30 мин)</li>
+                  <li data-i18n="arch_c_3">Парсер OTP (EN/RU/TR), sync-команды SYNC_5MIN / SYNC_DISCONNECT и журнал пропущенных</li>
+                </ul>
+              </div>
+
+              <div class="arch-bridge">
+                <div class="bridge-pill">Bluetooth Classic RFCOMM</div>
+                <div class="bridge-line"></div>
+                <div class="bridge-uuid">UUID 7d4e9a2b-6c14-4f83-9b52-3e8a1d7c4f90</div>
+                <div class="bridge-meta" data-i18n="arch_bridge_meta">Взаимное HMAC-SHA256 рукопожатие · AES-256-GCM кадры</div>
+              </div>
+
+              <div class="arch-node arch-node-cyan">
+                <div class="arch-node-badge">com.exantt.btrouterserver</div>
+                <h4>BTRouterServer</h4>
+                <ul>
+                  <li data-i18n="arch_s_1">Foreground-служба connectedDevice + BootReceiver автозапуск</li>
+                  <li data-i18n="arch_s_2">Сериализованный SMS-модем (до 10 сегментов, SMS_SENT), буфер 30 СМС (TTL 24 ч) с EVENT_ACK</li>
+                  <li data-i18n="arch_s_3">TelecomManager (DECLINE / DIAL), выгрузка до 5000 контактов, HotspotDetector и ContentObserver</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Interactive Protocol Breakdown Tabs -->
+            <div class="protocol-explorer">
+              <div class="proto-tabs" role="tablist">
+                <button type="button" class="proto-tab active" data-step="0" role="tab" aria-selected="true">
+                  <span class="proto-num">01</span>
+                  <span data-i18n="proto_t1">UUID и MAC-фильтр</span>
+                </button>
+                <button type="button" class="proto-tab" data-step="1" role="tab" aria-selected="false">
+                  <span class="proto-num">02</span>
+                  <span data-i18n="proto_t2">PSK + HMAC-SHA256</span>
+                </button>
+                <button type="button" class="proto-tab" data-step="2" role="tab" aria-selected="false">
+                  <span class="proto-num">03</span>
+                  <span data-i18n="proto_t3">AES-256-GCM кадры</span>
+                </button>
+                <button type="button" class="proto-tab" data-step="3" role="tab" aria-selected="false">
+                  <span class="proto-num">04</span>
+                  <span data-i18n="proto_t4">AndroidKeyStore</span>
+                </button>
+              </div>
+              <div class="proto-panel" id="protoPanel">
+                <div class="proto-panel-text">
+                  <h4 id="protoTitle">Выделенный UUID и fail-closed MAC-фильтрация</h4>
+                  <p id="protoDesc"></p>
+                </div>
+                <pre class="proto-code"><code id="protoCode"></code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Frame Anatomy & Cryptographic Guarantees -->
+          <div class="tech-block">
+            <h3 class="tech-block-title" data-i18n="sec_frame_title">Структура зашифрованного кадра BtProtocol и защита хранилища</h3>
+            <div class="frame-anatomy-card">
+              <div class="anatomy-head">
+                <span class="anatomy-title">BtProtocol Frame Layout</span>
+                <span class="anatomy-note" data-i18n="sec_frame_note">Нажмите на сегмент для деталей</span>
+              </div>
+
+              <div class="frame-bar" role="group" aria-label="Encrypted frame layout">
+                <button type="button" class="frame-seg seg-dir active" data-seg="dir">
+                  <span class="seg-bytes">4 B</span>
+                  <span class="seg-name">Direction</span>
+                </button>
+                <button type="button" class="frame-seg seg-seq" data-seg="seq">
+                  <span class="seg-bytes">8 B</span>
+                  <span class="seg-name">Monotonic Seq (AAD)</span>
+                </button>
+                <button type="button" class="frame-seg seg-payload" data-seg="payload">
+                  <span class="seg-bytes">N B</span>
+                  <span class="seg-name">AES-256-GCM Ciphertext</span>
+                </button>
+                <button type="button" class="frame-seg seg-tag" data-seg="tag">
+                  <span class="seg-bytes">16 B</span>
+                  <span class="seg-name">GCM Auth Tag</span>
+                </button>
+              </div>
+
+              <div class="frame-detail" id="frameDetail">
+                <strong id="frameDetailTitle"></strong>
+                <p id="frameDetailDesc"></p>
+              </div>
+            </div>
+
+            <div class="security-grid">
+              <div class="sec-card">
+                <span class="sec-kicker">PSK + NONCE</span>
+                <h4 data-i18n="sec_c1_title">Взаимная проверка без передачи секрета</h4>
+                <p data-i18n="sec_c1_desc">
+                  Обе стороны вычисляют SHA-256("BTRouter-PSK-v2:" + secret) из 16-символьного ключа, обмениваются 16-байтными SecureRandom nonce и сверяют HMAC-SHA256 через MessageDigest.isEqual.
+                </p>
+              </div>
+              <div class="sec-card">
+                <span class="sec-kicker">ANDROID KEYSTORE</span>
+                <h4 data-i18n="sec_c2_title">Аппаратная обёртка ключей</h4>
+                <p data-i18n="sec_c2_desc">
+                  PSK хранится зашифрованным ключом btrouter_psk_wrap_key (AES-256-GCM) в AndroidKeyStore. Облачные бэкапы и миграция sharedpref отключены (android:allowBackup="false").
+                </p>
+              </div>
+              <div class="sec-card">
+                <span class="sec-kicker">R8 / CI RELEASE</span>
+                <h4 data-i18n="sec_c3_title">Усиление release-сборки</h4>
+                <p data-i18n="sec_c3_desc">
+                  Включены R8-минификация, сжатие ресурсов, удаление Log.v / Log.d / Log.i, проверка подписи apksigner и публикация контрольных сумм SHA256SUMS.txt в GitHub Actions.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Source Build Block -->
+          <div class="tech-block">
+            <div class="build-box">
+              <div class="build-box-head">
+                <div>
+                  <h4 data-i18n="build_title">Сборка из исходного кода (JDK 21 · Android SDK 36.1)</h4>
+                  <span data-i18n="build_sub">Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 19 / Server versionCode 15)</span>
+                </div>
+                <button type="button" class="copy-chip" id="copyBuildCmd" data-copy="cd BTRouterClient && ./gradlew testDebugUnitTest lintDebug assembleDebug && cd ../BTRouterServer && ./gradlew testDebugUnitTest lintDebug assembleDebug" data-i18n="btn_copy">Копировать</button>
+              </div>
+              <pre class="build-code"><code>cd BTRouterClient &amp;&amp; ./gradlew testDebugUnitTest lintDebug assembleDebug
+cd ../BTRouterServer &amp;&amp; ./gradlew testDebugUnitTest lintDebug assembleDebug</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <strong>BTRouter</strong>
+        <span>v1.1.0 · MIT License</span>
+      </div>
+      <div class="footer-links">
+        <a href="#under-the-hood" class="nav-tech-link" data-i18n="footer_tech">Техническая документация</a>
+        <a href="https://github.com/exantt/BTRouter" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/exantt/BTRouter/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="https://github.com/exantt/BTRouter/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">SECURITY.md</a>
+        <a href="https://github.com/exantt/BTRouter/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">CHANGELOG.md</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
