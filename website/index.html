@@ -50,6 +50,7 @@
           <a href="#features" data-i18n="nav_features">Возможности</a>
           <a href="#setup" data-i18n="nav_setup">Настройка</a>
           <a href="#download" data-i18n="nav_download">Скачать</a>
+          <a href="#troubleshooting" data-i18n="nav_troubleshooting">Помощь</a>
           <a href="#under-the-hood" class="nav-tech-link" data-i18n="nav_tech">Подробно</a>
         </nav>
 
@@ -76,6 +77,7 @@
         <a href="#features" data-i18n="nav_features">Возможности</a>
         <a href="#setup" data-i18n="nav_setup">Настройка</a>
         <a href="#download" data-i18n="nav_download">Скачать</a>
+        <a href="#troubleshooting" data-i18n="nav_troubleshooting">Помощь</a>
         <a href="#under-the-hood" class="nav-tech-link" data-i18n="nav_tech">Подробно</a>
         <a href="https://github.com/exantt/BTRouter" target="_blank" rel="noopener noreferrer" class="mobile-drawer-gh">GitHub ↗</a>
       </div>
@@ -786,6 +788,85 @@
       </div>
     </section>
 
+    <!-- 06 / Troubleshooting Accordion Section -->
+    <section class="section" id="troubleshooting">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-index" data-i18n="ts_eyebrow">06 / РЕШЕНИЕ ПРОБЛЕМ</span>
+          <h2 class="section-title" data-i18n="ts_title">Если что-то пошло не так</h2>
+          <p class="section-desc" data-i18n="ts_desc">
+            Решения известных проблем, с которыми можно столкнуться при работе со связкой двух телефонов.
+          </p>
+        </div>
+
+        <div class="issues-list">
+          <article class="issue-card">
+            <button type="button" class="issue-trigger" aria-expanded="false" aria-controls="issueBody1">
+              <span class="issue-trigger-main">
+                <span class="issue-tag" data-i18n="ts_1_tag">СМС · VoLTE</span>
+                <strong data-i18n="ts_1_title">СМС долго висят в «Отправка…» или приходят дубликаты</strong>
+                <small data-i18n="ts_1_sub">Теряется подтверждение RP-ACK при включённом VoLTE на телефоне с SIM</small>
+              </span>
+              <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="issue-body" id="issueBody1" hidden>
+              <div class="issue-block">
+                <h3 class="issue-step-title">Почему так происходит</h3>
+                <p>На некоторых сочетаниях прошивки второго телефона, SIM-карты, оператора и роуминга подтверждение <code>RP-ACK</code> в режиме <code>SMS over IMS</code> (<code>VoLTE</code>) теряется. Из-за этого на основном телефоне долго висит статус <code>Sending…</code>, а модем телефона с SIM делает повторные попытки и отправляет дубликаты.</p>
+              </div>
+              <div class="issue-block">
+                <h3 class="issue-step-title">Что сделать</h3>
+                <p>Отключите <strong>VoLTE</strong> в настройках мобильной сети на телефоне с SIM (<code>BTRouterServer</code>). Без <code>VoLTE</code> сообщение уходит по стандартному каналу (<code>Телефон с SIM → SMSC</code>), подтверждение <code>RP-ACK</code> приходит сразу, статус на основном телефоне обновляется мгновенно, и повторов больше нет.</p>
+              </div>
+              <div class="issue-note">
+                <span class="issue-note-title">Полезно знать</span>
+                <ul>
+                  <li>На скорость 4G-интернета и работу точки доступа отключение <code>VoLTE</code> <strong>не влияет</strong>.</li>
+                  <li>Включённый <code>VoLTE</code> у собеседника никак не мешает — доставка <code>SMSC → получатель</code> идёт отдельным независимым соединением.</li>
+                  <li>Единственный нюанс: если в вашей сети или стране полностью отключены 2G и 3G, без <code>VoLTE</code> могут не проходить обычные голосовые звонки на телефон с SIM (там, где 2G/3G работают, звонки идут через них).</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="issue-card">
+            <button type="button" class="issue-trigger" aria-expanded="false" aria-controls="issueBody2">
+              <span class="issue-trigger-main">
+                <span class="issue-tag issue-tag-cyan" data-i18n="ts_2_tag">Samsung One UI</span>
+                <strong data-i18n="ts_2_title">Перестали срабатывать кнопки «Точка доступа» или «Интернет»</strong>
+                <small data-i18n="ts_2_sub">Перезапуск сервиса «Режимы и сценарии» и проверка условий 4 сценариев</small>
+              </span>
+              <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="issue-body" id="issueBody2" hidden>
+              <div class="issue-block">
+                <h3 class="issue-step-title">1. Перезапустите движок «Режимы и сценарии» на телефоне с SIM</h3>
+                <ul>
+                  <li>Откройте <code>Настройки → Приложения → Режимы и сценарии → Остановить</code> (принудительно).</li>
+                  <li>Там же перейдите в <code>Память → Очистить кэш</code> (именно кэш, <strong>не</strong> данные — чтобы не стереть настроенные сценарии).</li>
+                  <li>Там же откройте <code>Батарея → Без ограничений</code>.</li>
+                  <li>Откройте приложение <strong>Режимы и сценарии</strong>, чтобы его фоновый сервис заново поднялся, и проверьте, не висит ли какой-то из сценариев в состоянии «Выполняется».</li>
+                </ul>
+              </div>
+              <div class="issue-block">
+                <h3 class="issue-step-title">2. Проверьте сами 4 сценария</h3>
+                <ul>
+                  <li>В условии «Уведомление получено» должно быть выбрано строго приложение <code>BTRouterServer</code> (если оставить «Любое приложение», уведомления от самих сценариев могут перекрёстно запускать друг друга).</li>
+                  <li>В поле ключевых слов — <strong>одно точное слово</strong> (<code>BTR_HOTSPOT_ON</code>, <code>BTR_HOTSPOT_OFF</code>, <code>BTR_MOBILE_DATA_ON</code>, <code>BTR_MOBILE_DATA_OFF</code>) без лишних пробелов и дополнительных слов.</li>
+                  <li>В блоке «Когда сценарий завершится» выберите <strong>«Ничего не делать»</strong>.</li>
+                  <li>Выключите и снова включите тумблеры этих 4 сценариев — на One UI это заново перерегистрирует их фильтры.</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <!-- Deep Technical Under-the-Hood Section (collapsed by default) -->
     <section class="section tech-deep-dive" id="under-the-hood">
       <div class="container">
@@ -949,6 +1030,7 @@ cd ../BTRouterServer &amp;&amp; ./gradlew testDebugUnitTest lintDebug assembleDe
         <span>v1.1.0 · MIT License</span>
       </div>
       <div class="footer-links">
+        <a href="#troubleshooting" data-i18n="footer_troubleshooting">Решение проблем</a>
         <a href="#under-the-hood" class="nav-tech-link" data-i18n="footer_tech">Подробно</a>
         <a href="https://github.com/exantt/BTRouter" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://github.com/exantt/BTRouter/releases" target="_blank" rel="noopener noreferrer">Releases</a>

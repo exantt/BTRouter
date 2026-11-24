@@ -5,6 +5,7 @@
       nav_features: 'Возможности',
       nav_setup: 'Настройка',
       nav_download: 'Скачать',
+      nav_troubleshooting: 'Помощь',
       nav_tech: 'Подробно',
       hero_pill: 'BTRouter · Android 10+ · Прямой Bluetooth',
       hero_title_lead: 'Второй телефон в рюкзаке — все СМС и звонки',
@@ -156,6 +157,16 @@
       dl_btn_unavailable: 'Релиз пока недоступен',
       dl_notice_text: 'Готовые APK-файлы ещё не опубликованы — первый публичный релиз скоро появится на GitHub.',
       dl_notice_link: 'Открыть страницу Releases →',
+      ts_eyebrow: '06 / РЕШЕНИЕ ПРОБЛЕМ',
+      ts_title: 'Если что-то пошло не так',
+      ts_desc:
+        'Решения известных проблем, с которыми можно столкнуться при работе со связкой двух телефонов.',
+      ts_1_tag: 'СМС · VoLTE',
+      ts_1_title: 'СМС долго висят в «Отправка…» или приходят дубликаты',
+      ts_1_sub: 'Теряется подтверждение RP-ACK при включённом VoLTE на телефоне с SIM',
+      ts_2_tag: 'Samsung One UI',
+      ts_2_title: 'Перестали срабатывать кнопки «Точка доступа» или «Интернет»',
+      ts_2_sub: 'Перезапуск сервиса «Режимы и сценарии» и проверка условий 4 сценариев',
       tech_eyebrow: 'ПОДРОБНО · ДЛЯ СПЕЦИАЛИСТОВ',
       tech_title: 'Архитектура, криптография и сборка из исходного кода',
       tech_desc:
@@ -187,6 +198,7 @@
         'Включены R8-минификация, сжатие ресурсов, удаление Log.v / Log.d / Log.i, проверка подписи apksigner и публикация контрольных сумм SHA256SUMS.txt в GitHub Actions.',
       build_title: 'Сборка из исходного кода (JDK 21 · Android SDK 36.1)',
       build_sub: 'Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 19 / Server versionCode 15)',
+      footer_troubleshooting: 'Решение проблем',
       footer_tech: 'Подробно',
     },
     en: {
@@ -194,6 +206,7 @@
       nav_features: 'Features',
       nav_setup: 'Setup',
       nav_download: 'Download',
+      nav_troubleshooting: 'Help',
       nav_tech: 'Details',
       hero_pill: 'BTRouter · Android 10+ · Direct Bluetooth',
       hero_title_lead: 'Your second phone stays in your bag — all texts and calls',
@@ -345,6 +358,16 @@
       dl_btn_unavailable: 'Release not available yet',
       dl_notice_text: 'Prebuilt APK files are not published yet — the first public release will appear on GitHub soon.',
       dl_notice_link: 'View Releases page →',
+      ts_eyebrow: '06 / TROUBLESHOOTING',
+      ts_title: 'Troubleshooting common issues',
+      ts_desc:
+        'Known fixes for the most common carrier and Samsung One UI quirks you may run into.',
+      ts_1_tag: 'SMS · VoLTE',
+      ts_1_title: 'Texts stay stuck on “Sending…” or arrive as duplicates',
+      ts_1_sub: 'Missing RP-ACK delivery confirmation when VoLTE is enabled on the SIM phone',
+      ts_2_tag: 'Samsung One UI',
+      ts_2_title: 'Hotspot or Mobile Data toggles stopped triggering',
+      ts_2_sub: 'Restarting Modes and Routines and verifying the 4 keyword rules',
       tech_eyebrow: 'DETAILS · FOR DEVELOPERS',
       tech_title: 'Architecture, cryptography & building from source',
       tech_desc:
@@ -376,7 +399,91 @@
         'Release APKs enable R8 minification, resource shrinking, stripping of Log.v / Log.d / Log.i, apksigner verification, and SHA256SUMS.txt checksums in GitHub Actions.',
       build_title: 'Build from source (JDK 21 · Android SDK 36.1)',
       build_sub: 'Run testDebugUnitTest, lintDebug, and assembleDebug (Client versionCode 19 / Server versionCode 15)',
+      footer_troubleshooting: 'Troubleshooting',
       footer_tech: 'Details',
+    },
+  };
+
+  const troubleshootingBodies = {
+    ru: {
+      issueBody1: `
+        <div class="issue-block">
+          <h3 class="issue-step-title">Почему так происходит</h3>
+          <p>На некоторых сочетаниях прошивки второго телефона, SIM-карты, оператора и роуминга подтверждение <code>RP-ACK</code> в режиме <code>SMS over IMS</code> (<code>VoLTE</code>) теряется. Из-за этого на основном телефоне долго висит статус <code>Sending…</code>, а модем телефона с SIM делает повторные попытки и отправляет дубликаты.</p>
+        </div>
+        <div class="issue-block">
+          <h3 class="issue-step-title">Что сделать</h3>
+          <p>Отключите <strong>VoLTE</strong> в настройках мобильной сети на телефоне с SIM (<code>BTRouterServer</code>). Без <code>VoLTE</code> сообщение уходит по стандартному каналу (<code>Телефон с SIM → SMSC</code>), подтверждение <code>RP-ACK</code> приходит сразу, статус на основном телефоне обновляется мгновенно, и повторов больше нет.</p>
+        </div>
+        <div class="issue-note">
+          <span class="issue-note-title">Полезно знать</span>
+          <ul>
+            <li>На скорость 4G-интернета и работу точки доступа отключение <code>VoLTE</code> <strong>не влияет</strong>.</li>
+            <li>Включённый <code>VoLTE</code> у собеседника никак не мешает — доставка <code>SMSC → получатель</code> идёт отдельным независимым соединением.</li>
+            <li>Единственный нюанс: если в вашей сети или стране полностью отключены 2G и 3G, без <code>VoLTE</code> могут не проходить обычные голосовые звонки на телефон с SIM (там, где 2G/3G работают, звонки идут через них).</li>
+          </ul>
+        </div>
+      `,
+      issueBody2: `
+        <div class="issue-block">
+          <h3 class="issue-step-title">1. Перезапустите движок «Режимы и сценарии» на телефоне с SIM</h3>
+          <ul>
+            <li>Откройте <code>Настройки → Приложения → Режимы и сценарии → Остановить</code> (принудительно).</li>
+            <li>Там же перейдите в <code>Память → Очистить кэш</code> (именно кэш, <strong>не</strong> данные — чтобы не стереть настроенные сценарии).</li>
+            <li>Там же откройте <code>Батарея → Без ограничений</code>.</li>
+            <li>Откройте приложение <strong>Режимы и сценарии</strong>, чтобы его фоновый сервис заново поднялся, и проверьте, не висит ли какой-то из сценариев в состоянии «Выполняется».</li>
+          </ul>
+        </div>
+        <div class="issue-block">
+          <h3 class="issue-step-title">2. Проверьте сами 4 сценария</h3>
+          <ul>
+            <li>В условии «Уведомление получено» должно быть выбрано строго приложение <code>BTRouterServer</code> (если оставить «Любое приложение», уведомления от самих сценариев могут перекрёстно запускать друг друга).</li>
+            <li>В поле ключевых слов — <strong>одно точное слово</strong> (<code>BTR_HOTSPOT_ON</code>, <code>BTR_HOTSPOT_OFF</code>, <code>BTR_MOBILE_DATA_ON</code>, <code>BTR_MOBILE_DATA_OFF</code>) без лишних пробелов и дополнительных слов.</li>
+            <li>В блоке «Когда сценарий завершится» выберите <strong>«Ничего не делать»</strong>.</li>
+            <li>Выключите и снова включите тумблеры этих 4 сценариев — на One UI это заново перерегистрирует их фильтры.</li>
+          </ul>
+        </div>
+      `,
+    },
+    en: {
+      issueBody1: `
+        <div class="issue-block">
+          <h3 class="issue-step-title">Why it happens</h3>
+          <p>On certain combinations of SIM phone firmware, carrier, and roaming networks, the <code>RP-ACK</code> acknowledgement gets dropped in <code>SMS over IMS</code> (<code>VoLTE</code>) mode. Because no confirmation returns, your primary phone stays stuck on <code>Sending…</code> while the SIM phone modem retries and sends duplicates.</p>
+        </div>
+        <div class="issue-block">
+          <h3 class="issue-step-title">How to fix it</h3>
+          <p>Disable <strong>VoLTE</strong> in the mobile network settings on the SIM phone (<code>BTRouterServer</code>). With <code>VoLTE</code> turned off, SMS travels over the standard channel (<code>SIM Phone → SMSC</code>), <code>RP-ACK</code> returns right away, your primary phone updates immediately, and retries stop.</p>
+        </div>
+        <div class="issue-note">
+          <span class="issue-note-title">Good to know</span>
+          <ul>
+            <li>Turning off <code>VoLTE</code> <strong>does not affect</strong> 4G internet speeds or Wi-Fi hotspot tethering.</li>
+            <li>Whether the recipient has <code>VoLTE</code> enabled does not interfere — <code>SMSC → recipient</code> delivery runs over a separate connection.</li>
+            <li>One caveat: if your carrier has completely shut down both 2G and 3G, standard voice calls to the SIM phone may stop working without <code>VoLTE</code> (where 2G/3G are active, calls simply fall back to them).</li>
+          </ul>
+        </div>
+      `,
+      issueBody2: `
+        <div class="issue-block">
+          <h3 class="issue-step-title">1. Restart the Modes and Routines engine on the SIM phone</h3>
+          <ul>
+            <li>Open <code>Settings → Apps → Modes and Routines → Force stop</code>.</li>
+            <li>In the same screen, go to <code>Storage → Clear cache</code> (cache only, <strong>not</strong> Clear data — so you keep your rules).</li>
+            <li>Set <code>Battery → Unrestricted</code>.</li>
+            <li>Open the <strong>Modes and Routines</strong> app so its background service restarts, and check that none of the routines are stuck in “Running”.</li>
+          </ul>
+        </div>
+        <div class="issue-block">
+          <h3 class="issue-step-title">2. Double-check all 4 routines</h3>
+          <ul>
+            <li>Under the “Notification received” condition, select strictly <code>BTRouterServer</code> (if any rule still says “Any app”, routine notifications can cross-trigger each other).</li>
+            <li>In the keyword field, keep <strong>one exact word</strong> (<code>BTR_HOTSPOT_ON</code>, <code>BTR_HOTSPOT_OFF</code>, <code>BTR_MOBILE_DATA_ON</code>, <code>BTR_MOBILE_DATA_OFF</code>) with no extra spaces or words.</li>
+            <li>Set “When routine ends” to <strong>“Do nothing”</strong>.</li>
+            <li>Toggle the switches for all 4 routines off and back on — on One UI this re-registers their notification filters.</li>
+          </ul>
+        </div>
+      `,
     },
   };
 
@@ -1054,6 +1161,19 @@
     if (accBody) accBody.hidden = expanded;
   });
 
+  // Troubleshooting Accordions
+  document.querySelectorAll('.issue-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      const bodyId = btn.getAttribute('aria-controls');
+      const body = bodyId ? document.getElementById(bodyId) : null;
+      const card = btn.closest('.issue-card');
+      btn.setAttribute('aria-expanded', String(!expanded));
+      if (body) body.hidden = expanded;
+      card?.classList.toggle('is-open', !expanded);
+    });
+  });
+
   // Copy Chips
   document.querySelectorAll('.copy-chip').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -1128,6 +1248,14 @@
     if (otpIgnoredHint) {
       otpIgnoredHint.textContent = dict.otp_ignored_hint;
     }
+
+    const issueBodies = troubleshootingBodies[currentLang];
+    if (issueBodies) {
+      Object.entries(issueBodies).forEach(([id, html]) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      });
+    }
   }
 
   document.querySelectorAll('.lang-btn').forEach((btn) => {
@@ -1138,7 +1266,7 @@
 
   // Subtle Scroll Reveal
   const revealTargets = document.querySelectorAll(
-    '.bento-card, .scenario-stage, .setup-step, .dl-card'
+    '.bento-card, .scenario-stage, .setup-step, .dl-card, .issue-card'
   );
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(
