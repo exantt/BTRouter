@@ -662,50 +662,217 @@
           </div>
         </div>
 
-        <!-- Expandable Samsung One UI 5+ Routines Guide -->
-        <div class="samsung-accordion">
-          <button type="button" class="accordion-trigger" id="samsungAccordionBtn" aria-expanded="false" aria-controls="samsungAccordionBody">
-            <span>
-              <strong data-i18n="samsung_acc_title">По желанию: как настроить кнопки «Точка доступа» и «Интернет» (для Samsung)</strong>
-              <small data-i18n="samsung_acc_sub">Работает через встроенные сценарии Samsung One UI 5+</small>
-            </span>
-            <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
+        <!-- Expandable Detailed Setup Guide + Samsung One UI 5+ Routines Guide -->
+        <div class="setup-accordions">
+          <div class="setup-accordion guide-accordion">
+            <button type="button" class="accordion-trigger" id="fullGuideAccordionBtn" aria-expanded="false" aria-controls="fullGuideAccordionBody">
+              <span>
+                <span class="acc-kicker" data-i18n="guide_acc_kicker">ПОШАГОВО · ДЛЯ НОВИЧКОВ</span>
+                <strong data-i18n="guide_acc_title">Подробная инструкция по установке и настройке</strong>
+                <small data-i18n="guide_acc_sub">Понятное руководство со скриншотами: установка APK, Play Защита, разрешения, батарея и связка телефонов</small>
+              </span>
+              <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
 
-          <div class="accordion-body" id="samsungAccordionBody" hidden>
-            <p class="acc-intro" data-i18n="samsung_acc_intro">
-              На телефоне с SIM (Samsung с One UI 5+) откройте «Настройки → Режимы и сценарии → Сценарии → +», выберите условие «Уведомление получено» от BTRouterServer и добавьте 4 простых сценария по ключевым словам (отключив автовозврат):
-            </p>
-            <div class="keywords-grid">
-              <div class="kw-card">
-                <div class="kw-head">
-                  <code>BTR_HOTSPOT_ON</code>
-                  <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_ON" data-i18n="btn_copy">Копировать</button>
+            <div class="accordion-body guide-accordion-body" id="fullGuideAccordionBody" hidden>
+              <div class="guide-stages">
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">01</span>
+                    <h3>Определитесь, какое приложение на какой телефон ставить</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <p>Система состоит из двух разных программ. Не перепутайте их при установке:</p>
+                    <div class="guide-roles-grid">
+                      <div class="guide-role-card guide-role-server">
+                        <span class="guide-role-label">Телефон с SIM-картой (второй / запасной)</span>
+                        <strong>BT Router Server</strong>
+                        <p>Принимает СМС и звонки по мобильной сети и молча пересылает их только вашему основному телефону.</p>
+                      </div>
+                      <div class="guide-role-card guide-role-client">
+                        <span class="guide-role-label">Основной телефон (который всегда с вами)</span>
+                        <strong>BTRouterClient</strong>
+                        <p>Показывает чаты с СМС, автоматически копирует коды банков и выводит уведомления о звонках.</p>
+                      </div>
+                    </div>
+                    <p>Оба файла доступны в разделе <a href="#download" class="guide-inline-link">05 / Скачать v1.1.0</a> ниже на этой странице.</p>
+                  </div>
                 </div>
-                <span data-i18n="kw_hotspot_on">Мобильная точка доступа → Вкл.</span>
+
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">02</span>
+                    <h3>Скачайте и установите оба APK (что делать, если Google Play Защита блокирует установку)</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <ol>
+                      <li>Откройте эту страницу на каждом телефоне и нажмите <strong>Скачать</strong> для нужного приложения (<code>BTRouterServer</code> на телефон с SIM, <code>BTRouterClient</code> на основной).</li>
+                      <li>Когда браузер спросит разрешение на установку неизвестных приложений — откройте <code>Настройки</code> и включите тумблер <strong>«Разрешить для этого источника»</strong>.</li>
+                      <li>Если раньше на телефоне уже стояла старая тестовая версия (<code>1.0.xx</code>) — предварительно удалите её, чтобы не возник конфликт подписи.</li>
+                    </ol>
+                    <div class="guide-block-grid">
+                      <div>
+                        <p><strong>Если появилось окно Google Play Защиты «App blocked to protect your device» (без кнопки «Всё равно установить»):</strong></p>
+                        <p>Так Android реагирует на новые APK из браузера, которые запрашивают доступ к СМС (<code>BTRouterServer</code>). Вирусов здесь нет — исходный код полностью открыт на GitHub.</p>
+                        <ol>
+                          <li>Откройте приложение <strong>Google Play</strong> → нажмите на иконку профиля справа сверху → <strong>Play Защита</strong> (Play Protect) → значок шестерёнки ⚙ справа сверху.</li>
+                          <li>Временно выключите <strong>«Сканировать приложения с помощью Play Защиты»</strong>. <em>(На Samsung также временно отключите <code>Настройки → Безопасность и конфиденциальность → Автоблокировка</code>.)</em></li>
+                          <li>Запустите скачанный <code>BTRouterServer-v1.1.0.apk</code> ещё раз — установка пройдёт без блокировки.</li>
+                          <li>После установки обязательно <strong>включите Play Защиту обратно</strong>.</li>
+                          <li>Если позже Android 13+ не даёт включить разрешения СМС/телефона, откройте <code>Настройки → Приложения → BT Router Server → ⋮ (справа сверху) → Разрешить ограниченные настройки</code>.</li>
+                        </ol>
+                      </div>
+                      <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/play-protect-block.jpg" data-lightbox-alt="Предупреждение Google Play Protect при установке BTRouterServer" data-lightbox-caption="Окно Google Play Protect при установке BTRouterServer из браузера (нажмите для увеличения)">
+                        <img src="./assets/guide/play-protect-block.jpg" alt="Предупреждение Google Play Protect при установке BTRouterServer" loading="lazy" />
+                        <span class="guide-shot-cap">Окно Google Play Protect (нажмите, чтобы увеличить)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">03</span>
+                    <h3>Свяжите два смартфона по Bluetooth</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <ol>
+                      <li>Откройте системные <strong>Настройки → Bluetooth</strong> на обоих телефонах.</li>
+                      <li>Найдите второй смартфон в списке доступных устройств и выполните обычное сопряжение (подтвердите одинаковый код на обоих экранах).</li>
+                      <li>Достаточно просто добавить устройства в список <strong>«Связанные / Сопряжённые»</strong> — держать их принудительно подключёнными через меню Bluetooth не нужно, приложения свяжутся сами.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">04</span>
+                    <h3>Обязательно проверьте разрешения и режим батареи на ОБОИХ телефонах</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <p>Чтобы Android не усыплял приложения в фоне и сообщения не терялись, откройте <code>Настройки → Приложения</code> и убедитесь, что в пункте <strong>«Запрещено»</strong> (Not allowed) пусто (<strong>«Нет запрещённых разрешений»</strong>), отключите <strong>«Приостанавливать работу, если не используется»</strong> (Manage app if unused) и выберите <strong>Батарея → Без ограничений</strong> (Unrestricted).</p>
+
+                    <div class="guide-device-panel">
+                      <h4>1. На телефоне с SIM-картой — BT Router Server</h4>
+                      <ul>
+                        <li><strong>Разрешения (все 6 пунктов в «Разрешено»):</strong> <code>Журналы вызовов</code> (Call logs), <code>Контакты</code> (Contacts), <code>Устройства поблизости</code> (Nearby devices), <code>Уведомления</code> (Notifications), <code>Телефон</code> (Phone), <code>SMS</code>. В пункте «Запрещено» должно быть пусто.</li>
+                        <li><strong>Пауза неиспользуемого приложения:</strong> тумблер <code>Manage app if unused</code> выключен.</li>
+                        <li><strong>Батарея:</strong> <code>Без ограничений</code> (Unrestricted).</li>
+                      </ul>
+                      <div class="guide-shots-grid">
+                        <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/server-permissions.jpg" data-lightbox-alt="Разрешения приложения BT Router Server" data-lightbox-caption="BT Router Server: все 6 разрешений выданы, запрещённых нет, автоотзыв выключен">
+                          <img src="./assets/guide/server-permissions.jpg" alt="Разрешения приложения BT Router Server" loading="lazy" />
+                          <span class="guide-shot-cap">Разрешения BT Router Server: 6 разрешены, запрещённых нет</span>
+                        </button>
+                        <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/server-battery.jpg" data-lightbox-alt="Настройка батареи BT Router Server" data-lightbox-caption="BT Router Server: в разделе Батарея выбран пункт Unrestricted (Без ограничений)">
+                          <img src="./assets/guide/server-battery.jpg" alt="Настройка батареи BT Router Server" loading="lazy" />
+                          <span class="guide-shot-cap">Батарея BT Router Server: Без ограничений (Unrestricted)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="guide-device-panel">
+                      <h4>2. На основном телефоне — BTRouterClient</h4>
+                      <ul>
+                        <li><strong>Разрешения (все 3 пункта в «Разрешено»):</strong> <code>Контакты</code> (Contacts), <code>Устройства поблизости</code> (Nearby devices), <code>Уведомления</code> (Notifications). В пункте «Запрещено» должно быть пусто.</li>
+                        <li><strong>Пауза неиспользуемого приложения:</strong> тумблер <code>Manage app if unused</code> выключен.</li>
+                        <li><strong>Батарея:</strong> <code>Без ограничений</code> (Unrestricted).</li>
+                      </ul>
+                      <div class="guide-shots-grid">
+                        <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/client-permissions.jpg" data-lightbox-alt="Разрешения приложения BTRouterClient" data-lightbox-caption="BTRouterClient: все 3 разрешения выданы, запрещённых нет, автоотзыв выключен">
+                          <img src="./assets/guide/client-permissions.jpg" alt="Разрешения приложения BTRouterClient" loading="lazy" />
+                          <span class="guide-shot-cap">Разрешения BTRouterClient: 3 разрешены, запрещённых нет</span>
+                        </button>
+                        <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/client-battery.jpg" data-lightbox-alt="Настройка батареи BTRouterClient" data-lightbox-caption="BTRouterClient: в разделе Батарея выбран пункт Unrestricted (Без ограничений)">
+                          <img src="./assets/guide/client-battery.jpg" alt="Настройка батареи BTRouterClient" loading="lazy" />
+                          <span class="guide-shot-cap">Батарея BTRouterClient: Без ограничений (Unrestricted)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">05</span>
+                    <h3>Настройте приложение BT Router Server (на телефоне с SIM)</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <ol>
+                      <li>Откройте <strong>BT Router Server</strong> (при необходимости выберите язык <strong>RU</strong> или <strong>EN</strong>).</li>
+                      <li>Нажмите кнопку выбора клиентского устройства (<strong>«Выбрать устройство Client»</strong>) и укажите ваш основной телефон из списка Bluetooth.</li>
+                      <li>В блоке секретного ключа нажмите <strong>«Показать»</strong> или <strong>«Копир.»</strong> — запомните/скопируйте 16-символьный ключ вида <code>XXXX-XXXX-XXXX-XXXX</code> (удобно переслать себе в заметку или набрать вручную на основном телефоне).</li>
+                      <li>Убедитесь, что шлюз запущен — в шторке уведомлений появится постоянный значок службы Server.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div class="guide-stage">
+                  <div class="guide-stage-head">
+                    <span class="guide-stage-num">06</span>
+                    <h3>Настройте BTRouterClient (на основном телефоне) и проверьте связь</h3>
+                  </div>
+                  <div class="guide-stage-body">
+                    <ol>
+                      <li>Откройте <strong>BTRouterClient</strong> и нажмите на шестерёнку <strong>⚙ Настройки</strong> (при желании там же переключите язык RU / EN).</li>
+                      <li>В пункте <strong>«Устройство Server»</strong> выберите телефон с SIM-картой.</li>
+                      <li>В поле <strong>«Ключ сопряжения»</strong> введите тот же 16-символьный ключ с экрана Server и нажмите <strong>«Сохранить настройки шлюза»</strong>.</li>
+                      <li>Вернитесь на главный экран Client — через пару секунд статус должен загореться зелёным <code>● В СЕТИ</code> с уровнем батареи, оператором и сигналом.</li>
+                      <li>Отправьте тестовое СМС через Client. <em>Если СМС долго висит в статусе «Отправка…» или приходят дубли — посмотрите решение про VoLTE в разделе <a href="#troubleshooting" class="guide-inline-link">06 / Помощь</a>.</em></li>
+                    </ol>
+                  </div>
+                </div>
               </div>
-              <div class="kw-card">
-                <div class="kw-head">
-                  <code>BTR_HOTSPOT_OFF</code>
-                  <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_OFF" data-i18n="btn_copy">Копировать</button>
+            </div>
+          </div>
+
+          <!-- Expandable Samsung One UI 5+ Routines Guide -->
+          <div class="samsung-accordion">
+            <button type="button" class="accordion-trigger" id="samsungAccordionBtn" aria-expanded="false" aria-controls="samsungAccordionBody">
+              <span>
+                <strong data-i18n="samsung_acc_title">По желанию: как настроить кнопки «Точка доступа» и «Интернет» (для Samsung)</strong>
+                <small data-i18n="samsung_acc_sub">Работает через встроенные сценарии Samsung One UI 5+</small>
+              </span>
+              <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+
+            <div class="accordion-body" id="samsungAccordionBody" hidden>
+              <p class="acc-intro" data-i18n="samsung_acc_intro">
+                На телефоне с SIM (Samsung с One UI 5+) откройте «Настройки → Режимы и сценарии → Сценарии → +», выберите условие «Уведомление получено» от BTRouterServer и добавьте 4 простых сценария по ключевым словам (отключив автовозврат):
+              </p>
+              <div class="keywords-grid">
+                <div class="kw-card">
+                  <div class="kw-head">
+                    <code>BTR_HOTSPOT_ON</code>
+                    <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_ON" data-i18n="btn_copy">Копировать</button>
+                  </div>
+                  <span data-i18n="kw_hotspot_on">Мобильная точка доступа → Вкл.</span>
                 </div>
-                <span data-i18n="kw_hotspot_off">Мобильная точка доступа → Выкл.</span>
-              </div>
-              <div class="kw-card">
-                <div class="kw-head">
-                  <code>BTR_MOBILE_DATA_ON</code>
-                  <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_ON" data-i18n="btn_copy">Копировать</button>
+                <div class="kw-card">
+                  <div class="kw-head">
+                    <code>BTR_HOTSPOT_OFF</code>
+                    <button type="button" class="copy-chip" data-copy="BTR_HOTSPOT_OFF" data-i18n="btn_copy">Копировать</button>
+                  </div>
+                  <span data-i18n="kw_hotspot_off">Мобильная точка доступа → Выкл.</span>
                 </div>
-                <span data-i18n="kw_data_on">Мобильные данные → Вкл.</span>
-              </div>
-              <div class="kw-card">
-                <div class="kw-head">
-                  <code>BTR_MOBILE_DATA_OFF</code>
-                  <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_OFF" data-i18n="btn_copy">Копировать</button>
+                <div class="kw-card">
+                  <div class="kw-head">
+                    <code>BTR_MOBILE_DATA_ON</code>
+                    <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_ON" data-i18n="btn_copy">Копировать</button>
+                  </div>
+                  <span data-i18n="kw_data_on">Мобильные данные → Вкл.</span>
                 </div>
-                <span data-i18n="kw_data_off">Мобильные данные → Выкл.</span>
+                <div class="kw-card">
+                  <div class="kw-head">
+                    <code>BTR_MOBILE_DATA_OFF</code>
+                    <button type="button" class="copy-chip" data-copy="BTR_MOBILE_DATA_OFF" data-i18n="btn_copy">Копировать</button>
+                  </div>
+                  <span data-i18n="kw_data_off">Мобильные данные → Выкл.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -800,6 +967,55 @@
         </div>
 
         <div class="issues-list">
+          <article class="issue-card">
+            <button type="button" class="issue-trigger" aria-expanded="false" aria-controls="issueBody0">
+              <span class="issue-trigger-main">
+                <span class="issue-tag issue-tag-coral" data-i18n="ts_0_tag">Установка · Play Protect</span>
+                <strong data-i18n="ts_0_title">Google Play Защита блокирует установку BTRouterServer</strong>
+                <small data-i18n="ts_0_sub">Окно «App blocked to protect your device» без кнопки «Всё равно установить» — почему появляется и как установить безопасно</small>
+              </span>
+              <svg class="acc-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="issue-body" id="issueBody0" hidden>
+              <div class="issue-split">
+                <div class="issue-split-text">
+                  <div class="issue-block">
+                    <h3 class="issue-step-title">Почему появляется эта блокировка</h3>
+                    <p>Это усиленная защита Google Play Protect при установке APK из браузера: <code>BTRouterServer</code> запрашивает системные разрешения на <strong>SMS</strong> (без них невозможна пересылка сообщений) и подписан новым релизным сертификатом, который пока не набрал репутации в Google Play. Вредоносного кода в приложении нет — весь код открыт в репозитории GitHub.</p>
+                  </div>
+                  <div class="issue-block">
+                    <h3 class="issue-step-title">Способ 1 — установка прямо с телефона</h3>
+                    <ul>
+                      <li>Откройте <strong>Google Play</strong> → иконка профиля (справа сверху) → <strong>Play Защита</strong> (Play Protect) → шестерёнка ⚙ (справа сверху).</li>
+                      <li>Временно отключите <strong>«Сканировать приложения с помощью Play Защиты»</strong>.</li>
+                      <li><em>На Samsung также проверьте:</em> <code>Настройки → Безопасность и конфиденциальность → Автоблокировка</code> (Auto Blocker) должна быть выключена на время установки.</li>
+                      <li>Если ранее была установлена старая тестовая (<code>debug</code>) сборка <code>1.0.xx</code> — удалите её перед установкой релиза <code>1.1.0</code>.</li>
+                      <li>Установите <code>BTRouterServer-v1.1.0.apk</code> и сразу <strong>включите Play Защиту обратно</strong>.</li>
+                      <li>Если Android 13+ ограничит выдачу прав SMS/звонков, откройте <code>Настройки → Приложения → BT Router Server → ⋮ (справа сверху) → Разрешить ограниченные настройки</code>.</li>
+                    </ul>
+                  </div>
+                  <div class="issue-block">
+                    <h3 class="issue-step-title">Способ 2 — через ПК и ADB (без отключения Play Защиты)</h3>
+                    <p>Если на телефоне включена отладка по USB, команда <code>adb install BTRouterServer-v1.1.0.apk</code> устанавливает приложение в обход браузерной блокировки Play Protect.</p>
+                  </div>
+                </div>
+                <button type="button" class="guide-shot-btn" data-lightbox-src="./assets/guide/play-protect-block.jpg" data-lightbox-alt="Блокировка Google Play Protect при установке BTRouterServer" data-lightbox-caption="Окно Google Play Protect при установке BTRouterServer из браузера (нажмите для увеличения)">
+                  <img src="./assets/guide/play-protect-block.jpg" alt="Блокировка Google Play Protect при установке BTRouterServer" loading="lazy" />
+                  <span class="guide-shot-cap">Нажмите, чтобы увеличить</span>
+                </button>
+              </div>
+              <div class="issue-note">
+                <span class="issue-note-title">Проверка подлинности APK</span>
+                <ul>
+                  <li><code>BTRouterClient</code> не запрашивает SMS-разрешения, поэтому обычно устанавливается без блокировки.</li>
+                  <li>Хэш-суммы релизных файлов публикуются в <code>SHA256SUMS.txt</code> на странице GitHub Releases, а сертификат подписи <code>v1.1.0</code> имеет отпечаток SHA-256: <code>0d13e10fa3639c9f591c63102200fcb65d24327c8bc63f5b67abb99336521fea</code>.</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
           <article class="issue-card">
             <button type="button" class="issue-trigger" aria-expanded="false" aria-controls="issueBody1">
               <span class="issue-trigger-main">
@@ -1039,6 +1255,14 @@ cd ../BTRouterServer &amp;&amp; ./gradlew testDebugUnitTest lintDebug assembleDe
       </div>
     </div>
   </footer>
+
+  <div class="lightbox-overlay" id="imageLightbox" hidden role="dialog" aria-modal="true" aria-labelledby="lightboxCaption">
+    <div class="lightbox-dialog">
+      <button type="button" class="lightbox-close" id="lightboxCloseBtn" aria-label="Close">×</button>
+      <img id="lightboxImg" src="" alt="" />
+      <p class="lightbox-caption" id="lightboxCaption"></p>
+    </div>
+  </div>
 
   <script src="./app.js"></script>
 </body>
