@@ -13,7 +13,7 @@
       hero_subtitle:
         'BTRouter соединяет ваш основной смартфон со вторым телефоном, где стоит нужная SIM-карта. Читайте и отправляйте СМС, копируйте коды из банков за секунду, сбрасывайте лишние звонки и включайте Wi-Fi удалённо — даже без интернета.',
       hero_cta_demo: 'Попробовать в действии',
-      hero_cta_download: 'О релизе v1.1.0',
+      hero_cta_download: 'Скачать v1.1.0',
       hero_meta_line: 'Работает офлайн · Без облаков и аккаунтов · Открытый код MIT',
       role_server: 'Телефон с SIM',
       role_client: 'Основной телефон',
@@ -154,9 +154,10 @@
       dl_server_desc:
         'Устанавливается на смартфон с нужной SIM-картой: тихо работает в фоне, пересылает СМС и звонки только вашему телефону и следит за зарядом.',
       dl_ver_badge: 'Версия 1.1.0',
-      dl_btn_unavailable: 'Релиз пока недоступен',
-      dl_notice_text: 'Готовые APK-файлы ещё не опубликованы — первый публичный релиз скоро появится на GitHub.',
-      dl_notice_link: 'Открыть страницу Releases →',
+      dl_btn_client: 'Скачать BTRouterClient v1.1.0 (.apk)',
+      dl_btn_server: 'Скачать BTRouterServer v1.1.0 (.apk)',
+      dl_notice_text: 'Все APK подписаны и проверены apksigner; контрольные суммы SHA256SUMS.txt и список изменений доступны на GitHub.',
+      dl_notice_link: 'Релиз v1.1.0 и SHA-256 на GitHub →',
       ts_eyebrow: '06 / РЕШЕНИЕ ПРОБЛЕМ',
       ts_title: 'Если что-то пошло не так',
       ts_desc:
@@ -197,7 +198,7 @@
       sec_c3_desc:
         'Включены R8-минификация, сжатие ресурсов, удаление Log.v / Log.d / Log.i, проверка подписи apksigner и публикация контрольных сумм SHA256SUMS.txt в GitHub Actions.',
       build_title: 'Сборка из исходного кода (JDK 21 · Android SDK 36.1)',
-      build_sub: 'Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 19 / Server versionCode 15)',
+      build_sub: 'Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 24 / Server versionCode 20)',
       footer_troubleshooting: 'Решение проблем',
       footer_tech: 'Подробно',
     },
@@ -214,7 +215,7 @@
       hero_subtitle:
         'BTRouter links your everyday smartphone to your secondary phone holding the SIM card. Read and reply to SMS, copy bank verification codes in one second, dismiss unwanted calls, and toggle Wi-Fi hotspot remotely — even offline.',
       hero_cta_demo: 'See It in Action',
-      hero_cta_download: 'About v1.1.0 Release',
+      hero_cta_download: 'Download v1.1.0',
       hero_meta_line: 'Works offline · Zero cloud accounts · Open-source MIT',
       role_server: 'SIM Phone',
       role_client: 'Primary Phone',
@@ -355,9 +356,10 @@
       dl_server_desc:
         'Install on the phone carrying your SIM card: forwards texts and calls exclusively to your main phone and reports battery & signal.',
       dl_ver_badge: 'Version 1.1.0',
-      dl_btn_unavailable: 'Release not available yet',
-      dl_notice_text: 'Prebuilt APK files are not published yet — the first public release will appear on GitHub soon.',
-      dl_notice_link: 'View Releases page →',
+      dl_btn_client: 'Download BTRouterClient v1.1.0 (.apk)',
+      dl_btn_server: 'Download BTRouterServer v1.1.0 (.apk)',
+      dl_notice_text: 'All APKs are signed and apksigner-verified; SHA256SUMS.txt checksums and release notes are available on GitHub.',
+      dl_notice_link: 'v1.1.0 Release & SHA-256 on GitHub →',
       ts_eyebrow: '06 / TROUBLESHOOTING',
       ts_title: 'Troubleshooting common issues',
       ts_desc:
@@ -398,7 +400,7 @@
       sec_c3_desc:
         'Release APKs enable R8 minification, resource shrinking, stripping of Log.v / Log.d / Log.i, apksigner verification, and SHA256SUMS.txt checksums in GitHub Actions.',
       build_title: 'Build from source (JDK 21 · Android SDK 36.1)',
-      build_sub: 'Run testDebugUnitTest, lintDebug, and assembleDebug (Client versionCode 19 / Server versionCode 15)',
+      build_sub: 'Run testDebugUnitTest, lintDebug, and assembleDebug (Client versionCode 24 / Server versionCode 20)',
       footer_troubleshooting: 'Troubleshooting',
       footer_tech: 'Details',
     },

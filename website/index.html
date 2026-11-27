@@ -108,7 +108,7 @@
               </svg>
             </a>
             <a href="#download" class="btn btn-secondary" data-i18n="hero_cta_download">
-              О релизе v1.1.0
+              Скачать v1.1.0
             </a>
           </div>
 
@@ -747,9 +747,9 @@
               <span data-i18n="dl_ver_badge">Версия 1.1.0</span>
               <span>Android 10+</span>
             </div>
-            <button type="button" class="btn btn-disabled btn-block" disabled data-i18n="dl_btn_unavailable">
-              Релиз пока недоступен
-            </button>
+            <a href="https://github.com/exantt/BTRouter/releases/download/v1.1.0/BTRouterClient-v1.1.0.apk" class="btn btn-primary btn-block" data-i18n="dl_btn_client">
+              Скачать BTRouterClient v1.1.0 (.apk)
+            </a>
           </div>
 
           <div class="dl-card">
@@ -775,15 +775,15 @@
               <span data-i18n="dl_ver_badge">Версия 1.1.0</span>
               <span>Android 10+</span>
             </div>
-            <button type="button" class="btn btn-disabled btn-block" disabled data-i18n="dl_btn_unavailable">
-              Релиз пока недоступен
-            </button>
+            <a href="https://github.com/exantt/BTRouter/releases/download/v1.1.0/BTRouterServer-v1.1.0.apk" class="btn btn-primary btn-block" data-i18n="dl_btn_server">
+              Скачать BTRouterServer v1.1.0 (.apk)
+            </a>
           </div>
         </div>
 
         <div class="dl-notice">
-          <span data-i18n="dl_notice_text">Готовые APK-файлы ещё не опубликованы — первый публичный релиз скоро появится на GitHub.</span>
-          <a href="https://github.com/exantt/BTRouter/releases" target="_blank" rel="noopener noreferrer" data-i18n="dl_notice_link">Открыть страницу Releases →</a>
+          <span data-i18n="dl_notice_text">Все APK подписаны и проверены apksigner; контрольные суммы SHA256SUMS.txt и список изменений доступны на GitHub.</span>
+          <a href="https://github.com/exantt/BTRouter/releases/tag/v1.1.0" target="_blank" rel="noopener noreferrer" data-i18n="dl_notice_link">Релиз v1.1.0 и SHA-256 на GitHub →</a>
         </div>
       </div>
     </section>
@@ -1010,7 +1010,7 @@
               <div class="build-box-head">
                 <div>
                   <h4 data-i18n="build_title">Сборка из исходного кода (JDK 21 · Android SDK 36.1)</h4>
-                  <span data-i18n="build_sub">Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 19 / Server versionCode 15)</span>
+                  <span data-i18n="build_sub">Запуск testDebugUnitTest, lintDebug и assembleDebug (Client versionCode 24 / Server versionCode 20)</span>
                 </div>
                 <button type="button" class="copy-chip" id="copyBuildCmd" data-copy="cd BTRouterClient && ./gradlew testDebugUnitTest lintDebug assembleDebug && cd ../BTRouterServer && ./gradlew testDebugUnitTest lintDebug assembleDebug" data-i18n="btn_copy">Копировать</button>
               </div>
