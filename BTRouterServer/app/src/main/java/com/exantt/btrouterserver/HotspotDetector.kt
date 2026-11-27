@@ -37,16 +37,22 @@ object HotspotDetector {
         "^(swlan\\d*.*|ap\\d+.*|ap_br_.*|softap\\d*.*|sap\\d+.*|wlan[1-9]\\d*)$"
     )
 
+    private val softApWithWlan0Regex = Regex(
+        "^(swlan\\d*.*|ap\\d+.*|ap_br_.*|softap\\d*.*|sap\\d+.*|wlan\\d+)$"
+    )
+
     fun isSoftApInterfaceName(
         rawName: String?,
-        upstreamWifiIfaces: Set<String> = emptySet()
+        upstreamWifiIfaces: Set<String> = emptySet(),
+        allowWlan0: Boolean = false
     ): Boolean {
         val name = rawName?.trim()?.lowercase() ?: return false
         if (name.isEmpty()) return false
-        if (name == "lo" || name == "wlan0") return false
+        if (name == "lo" || (!allowWlan0 && name == "wlan0")) return false
         if (upstreamWifiIfaces.any { it.trim().lowercase() == name }) return false
         if (excludedPrefixes.any { name.startsWith(it) }) return false
-        return softApRegex.matches(name)
+        val regex = if (allowWlan0) softApWithWlan0Regex else softApRegex
+        return regex.matches(name)
     }
 
     /**
@@ -79,6 +85,6 @@ object HotspotDetector {
      */
     fun detectFromTetherArray(tetheredInterfaces: Collection<String>?): Int {
         if (tetheredInterfaces == null) return -1
-        return if (tetheredInterfaces.any { isSoftApInterfaceName(it) }) 1 else 0
+        return if (tetheredInterfaces.any { isSoftApInterfaceName(it, allowWlan0 = true) }) 1 else 0
     }
 }

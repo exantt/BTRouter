@@ -239,7 +239,8 @@ class ContactsHelperTest {
         val res4 = ContactsHelper.deduplicateContacts(listOf(intlMessenger, localFresh))
         assertEquals(1, res4.size)
         assertEquals("Иван Обновлённый", res4[0].name)
-        assertEquals("0555 123 45 67", res4[0].phone)
+        assertEquals("+90 555 123 45 67", res4[0].phone)
+        assertEquals("+905551234567", res4[0].normalizedPhone)
 
         // 5. Разные международные страны с общими последними 10 цифрами НЕ сливаются,
         // а один контакт с двумя разными номерами сохраняет обе записи
@@ -247,5 +248,32 @@ class ContactsHelperTest {
         val countryTr = ContactsHelper.ContactEntry("John TR", "+90 555 123 45 67", "+905551234567")
         val res5 = ContactsHelper.deduplicateContacts(listOf(countryUs, countryTr))
         assertEquals(2, res5.size)
+    }
+
+    @Test
+    fun cleanDisplayPhoneAndCanonicalKey_dropUssdAndStripExtensions() {
+        assertEquals("", ContactsHelper.cleanDisplayPhone("*100#"))
+        assertEquals("", ContactsHelper.canonicalPhoneKey("*100#"))
+
+        assertEquals("+7 999 111 22 33", ContactsHelper.cleanDisplayPhone("+7 999 111 22 33, 12"))
+        assertEquals("+79991112233", ContactsHelper.canonicalPhoneKey("+7 999 111 22 33, 12"))
+
+        assertEquals("+7 999 111 22 33", ContactsHelper.cleanDisplayPhone("+7 999 111 22 33 доб. 12"))
+        assertEquals("+79991112233", ContactsHelper.canonicalPhoneKey("+7 999 111 22 33 доб. 12"))
+
+        assertEquals("+1 555 123 4567", ContactsHelper.cleanDisplayPhone("+1 555 123 4567 ext 45"))
+        assertEquals("+15551234567", ContactsHelper.canonicalPhoneKey("+1 555 123 4567 ext 45"))
+    }
+
+    @Test
+    fun matchesQuery_handlesLocalPrefixesAgainstInternationalStoredNumbers() {
+        val ruContact = ContactsHelper.ContactEntry("Иван", "+7 999 111 22 33", "+79991112233")
+        val trContact = ContactsHelper.ContactEntry("Mehmet", "+90 555 123 45 67", "+905551234567")
+
+        assertTrue(ContactsHelper.matchesQuery(ruContact, "8999"))
+        assertTrue(ContactsHelper.matchesQuery(ruContact, "8999111"))
+        assertTrue(ContactsHelper.matchesQuery(trContact, "0555"))
+        assertTrue(ContactsHelper.matchesQuery(trContact, "0555123"))
+        assertFalse(ContactsHelper.matchesQuery(ruContact, "0555"))
     }
 }

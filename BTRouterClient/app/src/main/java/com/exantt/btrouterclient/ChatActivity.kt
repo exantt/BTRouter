@@ -1,6 +1,7 @@
 package com.exantt.btrouterclient
 
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
@@ -8,8 +9,10 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PersistableBundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -21,6 +24,8 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -33,7 +38,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
+class ChatActivity : AppCompatActivity(), ChatRepository.Listener, BTRouterClientService.ServiceCallback {
 
     companion object {
         const val EXTRA_CHAT_KEY = "extra_chat_key"
@@ -71,11 +76,13 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     private lateinit var layoutManager: LinearLayoutManager
     private lateinit var messageAdapter: ChatMessageAdapter
     private var hasPerformedInitialScroll = false
+    private var isDispatchingSms = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as BTRouterClientService.LocalBinder
             clientService = localBinder.getService()
+            clientService?.addCallback(this@ChatActivity)
             isBound = true
         }
 
@@ -85,12 +92,38 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
         }
     }
 
+    override fun onStatusUpdated(
+        batteryPct: Int,
+        isCharging: Boolean,
+        operator: String,
+        signalLevel: Int,
+        dataStatus: String
+    ) {}
+
+    override fun onConnectionStateChanged(connected: Boolean, statusMessage: String) {}
+    override fun onIncomingCall(callerDisplay: String) {}
+    override fun onCallEnded() {}
+    override fun onSyncDone(count: Int, hasMore: Boolean) {}
+    override fun onSyncEmpty() {}
+    override fun onStatusMessage(message: String) {}
+    override fun onCommandResult(
+        cmdId: String,
+        cmd: String,
+        ok: Boolean,
+        message: String,
+        restoredText: String?
+    ) {}
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         setContentView(R.layout.activity_chat)
 
         chatKey = intent.getStringExtra(EXTRA_CHAT_KEY).orEmpty()
@@ -186,8 +219,10 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     override fun onStart() {
         super.onStart()
         chatRepo.addListener(this)
-        if (!isBound && CompatUtils.hasBluetoothConnectPermission(this)) {
-            bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+        if (isBound && clientService != null) {
+            clientService?.addCallback(this)
+        } else if (CompatUtils.hasBluetoothConnectPermission(this)) {
+            isBound = bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
@@ -209,12 +244,13 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     override fun onStop() {
         super.onStop()
         chatRepo.removeListener(this)
+        clientService?.removeCallback(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (isBound) {
-            unbindService(serviceConnection)
+            try { unbindService(serviceConnection) } catch (_: Exception) {}
             isBound = false
         }
     }
@@ -228,7 +264,7 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     private fun applySystemInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(chatRoot) { view, windowInsets ->
             val insets = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
             )
             view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
             windowInsets
@@ -236,7 +272,7 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     }
 
     private fun updateSendButtonState() {
-        val hasText = !etMessageInput.text.isNullOrBlank()
+        val hasText = !etMessageInput.text.isNullOrBlank() && !isDispatchingSms
         btnSendMessage.isEnabled = hasText
         btnSendMessage.alpha = if (hasText) 1.0f else 0.45f
     }
@@ -360,7 +396,7 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
 
     private fun markVisibleMessagesAsRead() {
         val total = messageAdapter.itemCount
-        if (total == 0 || messages.isEmpty()) return
+        if (rvMessages.childCount == 0 || total == 0 || messages.isEmpty()) return
 
         val lastVisibleId = if (!rvMessages.canScrollVertically(1)) {
             messages.last().id
@@ -436,6 +472,7 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
     }
 
     private fun sendMessage() {
+        if (isDispatchingSms) return
         val chat = currentChat ?: return
         val text = etMessageInput.text?.toString().orEmpty()
         if (text.isBlank()) return
@@ -446,20 +483,27 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
             return
         }
 
-        val result = svc.sendSmsDetailed(
-            rawNumber = chat.address,
-            text = text,
-            displayName = chat.displayName.ifBlank { null }
-        )
-        if (!result.ok) {
-            Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-            return
-        }
+        isDispatchingSms = true
+        updateSendButtonState()
+        try {
+            val result = svc.sendSmsDetailed(
+                rawNumber = chat.address,
+                text = text,
+                displayName = chat.displayName.ifBlank { null }
+            )
+            if (!result.ok) {
+                Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+                return
+            }
 
-        etMessageInput.text.clear()
-        unreadDividerBeforeId = null
-        chatRepo.markAllRead(chatKey)
-        bindChatStateFromRepository(isInitialLoad = false, forceScrollToBottom = true)
+            etMessageInput.text.clear()
+            unreadDividerBeforeId = null
+            chatRepo.markAllRead(chatKey)
+            bindChatStateFromRepository(isInitialLoad = false, forceScrollToBottom = true)
+        } finally {
+            isDispatchingSms = false
+            updateSendButtonState()
+        }
     }
 
     private fun formatDateLabel(timestampMs: Long): String {
@@ -488,8 +532,16 @@ class ChatActivity : AppCompatActivity(), ChatRepository.Listener {
 
     private fun copyTextToClipboard(text: String) {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("BTRouter SMS", text))
-        Toast.makeText(this, getString(R.string.chat_message_copied), Toast.LENGTH_SHORT).show()
+        val clip = ClipData.newPlainText("BTRouter SMS", text)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            clip.description.extras = PersistableBundle().apply {
+                putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+            }
+        }
+        clipboard.setPrimaryClip(clip)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, getString(R.string.chat_message_copied), Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showMessageActionsDialog(msg: ChatLogic.ChatMessage) {

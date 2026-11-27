@@ -2,6 +2,7 @@ package com.exantt.btrouterclient
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,8 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -37,6 +40,10 @@ class MissedCallsActivity : AppCompatActivity(), ChatRepository.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         setContentView(R.layout.activity_missed_calls)
 
         chatRepo = ChatRepository.getInstance(this)
@@ -75,6 +82,7 @@ class MissedCallsActivity : AppCompatActivity(), ChatRepository.Listener {
     override fun onResume() {
         super.onResume()
         BTRouterClientService.markMissedCallsViewed(this)
+        BTRouterClientService.markMissedCallsViewedId(this, chatRepo.getMaxMissedCallId())
         reloadMissedCalls()
     }
 
@@ -85,12 +93,15 @@ class MissedCallsActivity : AppCompatActivity(), ChatRepository.Listener {
 
     override fun onMissedCallsChanged() {
         BTRouterClientService.markMissedCallsViewed(this)
+        BTRouterClientService.markMissedCallsViewedId(this, chatRepo.getMaxMissedCallId())
         reloadMissedCalls()
     }
 
     private fun applySystemInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(missedCallsRoot) { _, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             missedCallsRoot.setPadding(insets.left, insets.top, insets.right, 0)
             rvMissedCalls.setPadding(
                 rvMissedCalls.paddingLeft,

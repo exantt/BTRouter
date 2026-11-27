@@ -168,4 +168,54 @@ class ChatLogicTest {
         )
         assertEquals(outgoingTs + 5_000L, syncedFallbackTs)
     }
+
+    @Test
+    fun canTransitionOutgoingStatusProtectsTerminalStatesAndAllowsLateConfirmation() {
+        // Идентичный статус не даёт лишнего обновления
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENDING, ChatLogic.STATUS_SENDING))
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENT, ChatLogic.STATUS_SENT))
+
+        // Нормальные переходы из SENDING / QUEUED / UNKNOWN
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENDING, ChatLogic.STATUS_SENT))
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENDING, ChatLogic.STATUS_FAILED))
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENDING, ChatLogic.STATUS_UNKNOWN))
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_QUEUED, ChatLogic.STATUS_SENDING))
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_UNKNOWN, ChatLogic.STATUS_SENT))
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_UNKNOWN, ChatLogic.STATUS_FAILED))
+
+        // Подтверждённое STATUS_SENT защищено от откатов (например, из-за обрыва BT после DB-фолбека)
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENT, ChatLogic.STATUS_FAILED))
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENT, ChatLogic.STATUS_UNKNOWN))
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_SENT, ChatLogic.STATUS_SENDING))
+
+        // Из STATUS_FAILED разрешено повышение до STATUS_SENT (поздний callback), но не откат в UNKNOWN
+        assertTrue(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_FAILED, ChatLogic.STATUS_SENT))
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_FAILED, ChatLogic.STATUS_UNKNOWN))
+        assertFalse(ChatLogic.canTransitionOutgoingStatus(ChatLogic.STATUS_FAILED, ChatLogic.STATUS_SENDING))
+    }
+
+    @Test
+    fun internationalNumbersWithDifferentCountryCodesDoNotMerge() {
+        assertEquals(
+            "+19991112233",
+            ChatLogic.findMatchingPhoneChatKey("+19991112233", listOf("+79991112233"))
+        )
+        assertEquals(
+            "+79991112233",
+            ChatLogic.findMatchingPhoneChatKey("89991112233", listOf("+79991112233"))
+        )
+    }
+
+    @Test
+    fun delayedLiveMessageOverSixtySecondsPreservesRawTimestamp() {
+        val rawTs = 1_700_000_000_000L
+        val receivedTs = rawTs + 120_000L
+        val resolved = ChatLogic.resolveMessageTimestamp(
+            rawTimestampMs = rawTs,
+            receivedAtMs = receivedTs,
+            existingLastTs = rawTs - 10_000L,
+            isSync = false
+        )
+        assertEquals(rawTs, resolved)
+    }
 }

@@ -109,10 +109,13 @@ class HotspotDetectorTest {
     @Test
     fun detectFromTetherArrayHandlesPresentEmptyNullAndOtherTethers() {
         assertEquals(1, HotspotDetector.detectFromTetherArray(listOf("swlan0")))
+        assertEquals(1, HotspotDetector.detectFromTetherArray(listOf("wlan0")))
         assertEquals(1, HotspotDetector.detectFromTetherArray(listOf("rndis0", "ap_br_wlan2")))
         assertEquals(0, HotspotDetector.detectFromTetherArray(listOf("rndis0")))
         assertEquals(0, HotspotDetector.detectFromTetherArray(listOf("bt-pan")))
         assertEquals(0, HotspotDetector.detectFromTetherArray(emptyList()))
         assertEquals(-1, HotspotDetector.detectFromTetherArray(null))
+        assertFalse(HotspotDetector.isSoftApInterfaceName("wlan0"))
+        assertTrue(HotspotDetector.isSoftApInterfaceName("wlan0", allowWlan0 = true))
     }
 }

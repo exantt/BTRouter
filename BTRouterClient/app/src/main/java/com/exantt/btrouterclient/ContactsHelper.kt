@@ -34,10 +34,19 @@ object ContactsHelper {
         Character.UnicodeBlock.LATIN_EXTENDED_B
     )
 
+    private val PHONE_EXT_REGEX = Regex("[,;]|(?:^|\\s)(?:доб\\.?|вн\\.?|ext\\.?|x)\\s*\\d", RegexOption.IGNORE_CASE)
+
+    fun stripPhoneExtension(raw: String): String? {
+        if ('*' in raw || '#' in raw) return null
+        val match = PHONE_EXT_REGEX.find(raw) ?: return raw
+        return raw.substring(0, match.range.first)
+    }
+
     fun cleanDisplayPhone(raw: String): String {
-        val sb = StringBuilder(raw.length)
+        val base = stripPhoneExtension(raw) ?: return ""
+        val sb = StringBuilder(base.length)
         var prevSpace = false
-        for (ch in raw) {
+        for (ch in base) {
             if (Character.getType(ch) == Character.FORMAT.toInt()) continue
             when {
                 ch == '\u00A0' || ch.isWhitespace() -> {
@@ -60,8 +69,9 @@ object ContactsHelper {
     }
 
     fun canonicalPhoneKey(raw: String): String {
+        val base = stripPhoneExtension(raw) ?: return ""
         val sb = StringBuilder(16)
-        for (ch in raw) {
+        for (ch in base) {
             if (Character.getType(ch) == Character.FORMAT.toInt() || ch.isWhitespace()) continue
             if (sb.isEmpty() && ch == '+') {
                 sb.append('+')
@@ -217,7 +227,11 @@ object ContactsHelper {
             if (removed[intlIdx]) continue
             val intl = pass1[intlIdx]
 
-            pass1[intlIdx] = if (isBetterCandidate(local, intl)) local else intl
+            pass1[intlIdx] = if (isBetterCandidate(local, intl)) {
+                local.copy(phone = intl.phone, normalizedPhone = intl.normalizedPhone)
+            } else {
+                intl
+            }
             removed[i] = true
         }
 
@@ -365,8 +379,16 @@ object ContactsHelper {
             if (trimmed.startsWith("+")) {
                 return canonicalPhoneKey(contact.phone).contains("+$qDigits")
             }
-            if (qDigits.isNotEmpty() && digitsOnly(contact.phone).contains(qDigits)) {
-                return true
+            if (qDigits.isNotEmpty()) {
+                val phoneDigits = digitsOnly(contact.phone)
+                if (phoneDigits.contains(qDigits)) {
+                    return true
+                }
+                if (qDigits.length >= 4 && (qDigits.startsWith("8") || qDigits.startsWith("0")) &&
+                    phoneDigits.contains(qDigits.substring(1))
+                ) {
+                    return true
+                }
             }
         }
 

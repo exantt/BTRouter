@@ -36,10 +36,10 @@ class OtpCopyReceiver : BroadcastReceiver() {
                         }
                     }
                     cm.setPrimaryClip(clip)
-                    if (showToast) {
+                    if (showToast && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                         Toast.makeText(
                             appCtx,
-                            locCtx.getString(R.string.otp_copied_toast, code),
+                            locCtx.getString(R.string.otp_copied_toast_safe),
                             Toast.LENGTH_SHORT
                         ).show()
                     }

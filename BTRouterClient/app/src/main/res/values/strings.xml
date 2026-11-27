@@ -28,6 +28,7 @@
     <string name="btn_copy_otp_default">📋 COPY CODE</string>
     <string name="btn_copy_otp_code">📋 COPY %1$s</string>
     <string name="otp_copied_toast">Code %1$s copied to clipboard</string>
+    <string name="otp_copied_toast_safe">Code copied to clipboard</string>
     <string name="hint_reply_message">Write a reply...</string>
     <string name="btn_send_reply">SEND REPLY</string>
     <string name="send_sms_panel_title">Send SMS</string>
@@ -74,7 +75,7 @@
     <string name="settings_save_gateway">SAVE GATEWAY SETTINGS</string>
     <string name="settings_waiting_service">Waiting for service status...</string>
     <string name="settings_sync_title">SYNC WITH SERVER</string>
-    <string name="settings_sync_desc">Fetch missed SMS and calls from Server device</string>
+    <string name="settings_sync_desc">Sync runs automatically after reconnect. Use the buttons below for manual sync.</string>
     <string name="btn_sync_5min">SYNC (5 MIN)</string>
     <string name="btn_sync_disconnect">SYNC SINCE DROP</string>
     <string name="settings_otp_title">AUTO-COPY CODES (OTP)</string>
@@ -118,6 +119,7 @@
     <string name="contacts_connecting_loading_server">Connecting to service and loading contacts from Server...</string>
     <string name="contacts_grant_permission_notice">Grant permission to read Client contacts</string>
     <string name="btn_grant_contacts_permission">GRANT CONTACTS ACCESS</string>
+    <string name="btn_open_app_settings">OPEN APP SETTINGS</string>
     <string name="contacts_reading_client">Reading Client contacts...</string>
     <string name="contacts_offline_cached">No connection to Server — showing previously loaded contacts</string>
     <string name="contacts_section_recent">RECENT (SMS)</string>
@@ -150,6 +152,7 @@
     <string name="error_no_active_channel">No active Server channel</string>
     <string name="error_empty_sms_text">Enter message text</string>
     <string name="error_sms_too_long">SMS is too long (max %1$d chars)</string>
+    <string name="error_sms_too_many_parts">SMS is too long (max %1$d parts)</string>
     <string name="dial_no_connection">No connection to Server — call not sent</string>
     <string name="dial_sending">Sending call command to Server...</string>
     <string name="contacts_no_connection">No connection to Server — failed to load contacts</string>
@@ -254,4 +257,11 @@
     <string name="dialog_delete_message_title">Delete message?</string>
     <string name="dialog_delete_message_confirm">This message will be deleted from Client chat history.</string>
     <string name="toast_message_deleted">Message deleted</string>
+    <string name="hotspot_verify_failed_on">Hotspot on Server did not turn on within 8 s (check Samsung Routines on Server)</string>
+    <string name="hotspot_verify_failed_off">Hotspot on Server did not turn off within 8 s (check Samsung Routines on Server)</string>
+    <string name="mobile_data_verify_failed_on">Mobile data on Server did not turn on within 8 s (check Samsung Routines on Server)</string>
+    <string name="mobile_data_verify_failed_off">Mobile data on Server did not turn off within 8 s (check Samsung Routines on Server)</string>
+    <string name="channel_alert_name">Server control alerts</string>
+    <string name="channel_alert_desc">Alerts when a remote Server toggle fails to apply</string>
+    <string name="notif_toggle_failed_title">Server routine did not respond</string>
 </resources>

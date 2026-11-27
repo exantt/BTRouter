@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.Color
 import android.os.Bundle
 import android.os.IBinder
 import android.view.View
@@ -13,6 +14,8 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -29,6 +32,7 @@ class NewSmsActivity : AppCompatActivity() {
 
     private var clientService: BTRouterClientService? = null
     private var isBound = false
+    private var isDispatchingSms = false
     private var pickedContactName: String? = null
     private var pickedContactNumber: String? = null
 
@@ -75,6 +79,10 @@ class NewSmsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         setContentView(R.layout.activity_new_sms)
 
         newSmsRoot = findViewById(R.id.newSmsRoot)
@@ -110,6 +118,8 @@ class NewSmsActivity : AppCompatActivity() {
         }
 
         btnSendNewSms.setOnClickListener {
+            if (isDispatchingSms) return@setOnClickListener
+
             val number = etTargetNumber.text.toString()
             val text = etNewSmsText.text.toString()
             val prevNumber = pickedContactNumber
@@ -127,8 +137,12 @@ class NewSmsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            isDispatchingSms = true
+            btnSendNewSms.isEnabled = false
             val result = svc.sendSmsDetailed(number, text, contactName)
             if (!result.ok) {
+                isDispatchingSms = false
+                btnSendNewSms.isEnabled = true
                 showStatusError(result.message)
                 return@setOnClickListener
             }
@@ -156,14 +170,14 @@ class NewSmsActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if (!isBound && CompatUtils.hasBluetoothConnectPermission(this)) {
-            bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+            isBound = bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (isBound) {
-            unbindService(serviceConnection)
+            try { unbindService(serviceConnection) } catch (_: Exception) {}
             isBound = false
         }
     }
@@ -171,9 +185,11 @@ class NewSmsActivity : AppCompatActivity() {
     private fun applySystemInsets() {
         newSmsScrollView.clipToPadding = false
         ViewCompat.setOnApplyWindowInsetsListener(newSmsRoot) { _, windowInsets ->
-            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val systemBars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             val imeAndBars = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
             )
             newSmsRoot.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             newSmsScrollView.setPadding(0, 0, 0, imeAndBars.bottom)

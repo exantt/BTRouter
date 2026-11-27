@@ -45,13 +45,13 @@ flowchart LR
 - **Smart OTP / 2FA Extraction:** Automatically extracts verification codes from English, Russian, and Turkish bank/service SMS (including inverted Turkish phrasing) while filtering out dates, card suffixes, monetary amounts, phone numbers, and carrier suffixes (`B001`, `M001`). Supports one-tap notification copy and optional clipboard auto-copy.
 - **Call Monitoring & Actions:** Real-time incoming call banner and high-priority notification with remote **Decline**, missed-call notifications and persistent **Missed Calls** log with unread badge, plus remote outgoing **Dial** routed to Server.
 - **Dual Address Book:** Switch between Client local contacts and Server contacts streamed in encrypted chunks over Bluetooth, plus recent SMS recipients.
-- **Missed-Event Sync:** On-demand sync for the last 5 minutes (`SYNC_5MIN`) or all missed SMS/calls since the last disconnect (`SYNC_DISCONNECT`), deduplicated by `eventId`.
-- **Optional Remote Toggles (Samsung One UI 5+):** Compact switches for Server **Mobile Data** and **Mobile Hotspot** powered by Samsung Modes & Routines notification triggers.
-- **Bilingual Interface:** Built-in runtime language switcher (**English** / **Русский**).
+- **Missed-Event Sync:** Automatic sync upon reconnect after disconnect for SMS and calls missed while offline, plus manual triggers (`SYNC_5MIN` / `SYNC_DISCONNECT`) deduplicated by `eventId`.
+- **Optional Remote Toggles (Samsung One UI 5+):** Compact switches for Server **Mobile Data** and **Mobile Hotspot** powered by Samsung Modes & Routines notification triggers, with toggle state verification.
+- **Bilingual Interface:** Built-in runtime language switcher (**English** / **Русский**) in both Client and Server.
 
 ### `BTRouterServer` (`com.exantt.btrouterserver`)
-- **Persistent Gateway Service:** Runs as a `connectedDevice` foreground service with automatic start on boot (`BootReceiver`) and lock-free wakeups via Bluetooth state monitoring.
-- **Serialized Outbound SMS Queue:** Dispatches single-part and multipart SMS (up to 10 parts) sequentially with inter-send cooldowns and per-message modem status feedback (`SMS_SENT`).
+- **Persistent Gateway Service:** Runs as a `connectedDevice|shortService` foreground service with automatic start on boot (`BootReceiver`), lock-free wakeups via Bluetooth state monitoring, and runtime RU/EN localization.
+- **Serialized Outbound SMS Queue:** Dispatches single-part and multipart SMS (up to 10 parts) sequentially with inter-send cooldowns and per-message modem status feedback (`SMS_SENT`), buffering offline results until Client reconnects.
 - **Reliable Delivery Buffer:** Persists up to 30 unacknowledged live SMS (24-hour TTL) and flushes them upon Client reconnection until `EVENT_ACK` is received.
 - **Contacts & Telemetry Sync:** Streams up to 5,000 contacts in framed chunks and reports battery, cellular, network, hotspot (`HotspotDetector`), and mobile data (`ContentObserver`) state changes.
 - **Strict Access Control:** Accepts connections exclusively from a single explicitly selected paired Bluetooth MAC address and verifies the 16-character pre-shared key on every session.
@@ -84,7 +84,7 @@ For vulnerability reporting and full threat-model notes, see [SECURITY.md](SECUR
 
 1. Install **BTRouterServer** on the phone holding your SIM card and **BTRouterClient** on your primary phone.
 2. Pair the two phones in **Android Settings → Bluetooth**.
-3. Open **BTRouterServer**, grant all requested permissions, tap **Выбрать устройство Client**, and pick your primary phone.
+3. Open **BTRouterServer**, grant all requested permissions, tap **Select Client Device**, and pick your primary phone.
 4. Reveal or copy the **Pairing Key (PSK)** shown on Server (`XXXX-XXXX-XXXX-XXXX`).
 5. Open **BTRouterClient → ⚙ Settings**, select the Server device from the dropdown, paste the Pairing Key, and tap **Save Gateway Settings**.
 6. Wait a moment for the status badge to show `● ONLINE` (encrypted channel active).

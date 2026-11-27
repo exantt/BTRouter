@@ -49,8 +49,8 @@ android {
         applicationId = "com.exantt.btrouterclient"
         minSdk = 29
         targetSdk = 36
-        versionCode = 19
-        // Semantic Versioning: повышать версию при изменениях (например, 1.1.0 -> 1.1.1)
+        versionCode = 24
+        // При каждом изменении кода повышать третью цифру версии (1.0.0 -> 1.0.1)
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -58,6 +58,12 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
 
     signingConfigs {

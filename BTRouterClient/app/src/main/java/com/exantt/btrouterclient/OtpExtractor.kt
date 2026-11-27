@@ -27,7 +27,7 @@ object OtpExtractor {
         "(?<![\\p{L}\\p{N}])(?:" +
             "sifre(?!siz)\\p{L}*|onay\\s+kod\\p{L}*|dogrulama\\p{L}*|tek\\s+kullanim\\p{L}*|" +
             "giris\\s+kod\\p{L}*|guvenlik\\s+kod\\p{L}*|islem\\s+kod\\p{L}*|sms\\s+kod\\p{L}*|" +
-            "akilli\\s+sms|parola\\p{L}*|3d\\s*-?\\s*secure|3ds|kimseyle\\s+paylasma\\p{L}*|kimseye\\s+soyleme\\p{L}*|" +
+            "akilli\\s+sms|parola\\p{L}*|3d\\s*(?:-\\s*)?secure|3ds|kimseyle\\s+paylasma\\p{L}*|kimseye\\s+soyleme\\p{L}*|" +
             "парол\\p{L}*|одноразов\\p{L}*|подтвержд\\p{L}*|пин-?код\\p{L}*|" +
             "никому\\s+не\\s+сообщай\\p{L}*|никому\\s+не\\s+говори\\p{L}*|не\\s+передавайте|" +
             "otp|2fa|mfa|passcode|one-?time|onetime|verification|verify|authenticat(?:e|ion)|" +
@@ -40,7 +40,7 @@ object OtpExtractor {
     private val STRONG_WARNING_OR_OTP_REGEX = Regex(
         "(?<![\\p{L}\\p{N}])(?:" +
             "sifre(?!siz)\\p{L}*|onay\\s+kod\\p{L}*|dogrulama\\p{L}*|tek\\s+kullanim\\p{L}*|" +
-            "3d\\s*-?\\s*secure|kimseyle\\s+paylasma\\p{L}*|" +
+            "3d\\s*(?:-\\s*)?secure|kimseyle\\s+paylasma\\p{L}*|" +
             "код\\s+подтвержд\\p{L}*|одноразов\\p{L}*|никому\\s+не\\s+сообщай\\p{L}*|никому\\s+не\\s+говори\\p{L}*|" +
             "otp|passcode|verification|do\\s+not\\s+share|don't\\s+share" +
             ")(?![\\p{L}\\p{N}])"
@@ -106,8 +106,8 @@ object OtpExtractor {
         Regex("(?<!\\d)\\d{4}[\\s-]+\\d{4}[\\s-]+\\d{4}[\\s-]+\\d{4}(?!\\d)"),
 
         // Телефоны и колл-центры
-        Regex("(?<!\\d)444(?:\\s*-?\\s*\\d){4}(?!\\d)"),
-        Regex("(?<!\\d)0?850(?:\\s*-?\\s*\\d){7}(?!\\d)"),
+        Regex("(?<!\\d)444(?:\\s*(?:-\\s*)?\\d){4}(?!\\d)"),
+        Regex("(?<!\\d)0?850(?:\\s*(?:-\\s*)?\\d){7}(?!\\d)"),
         Regex("(?<!\\d)(?:0?800|[78][\\s-]?\\(?800\\)?)(?:[\\s-]?\\d){7}(?!\\d)"),
         Regex("\\+\\d{1,3}(?:[\\s()-]*\\d){7,13}(?!\\d)"),
         Regex("(?<!\\d)0[2-5]\\d{2}[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}(?!\\d)"),
@@ -149,10 +149,10 @@ object OtpExtractor {
             "islem\\s+(?:kod\\p{L}*|sifre\\p{L}*)|" +
             "sms\\s+(?:kod\\p{L}*|sifre\\p{L}*)|" +
             "akilli\\s+sms(?:\\s+(?:kod\\p{L}*|sifre\\p{L}*))?|" +
-            "3d\\s*-?\\s*secure(?:\\s+(?:kod\\p{L}*|sifre\\p{L}*|pin))?|" +
+            "3d\\s*(?:-\\s*)?secure(?:\\s+(?:kod\\p{L}*|sifre\\p{L}*|pin))?|" +
             "sifre(?!siz)\\p{L}*|parola\\p{L}*|kodunuz|kodunu|kodu|kod|" +
             "код\\s+подтверждения|одноразов\\p{L}*\\s+(?:код\\p{L}*|парол\\p{L}*)|парол\\p{L}*|пин-?код\\p{L}*|код|" +
-            "(?:verification|security|confirmation|login|access|auth|one-?time|3d\\s*-?\\s*secure|sms)\\s+(?:code|password|passcode|pin)|" +
+            "(?:verification|security|confirmation|login|access|auth|one-?time|3d\\s*(?:-\\s*)?secure|sms)\\s+(?:code|password|passcode|pin)|" +
             "otp|passcode|pin|code" +
             ")(?![\\p{L}\\p{N}])"
     )
@@ -166,7 +166,7 @@ object OtpExtractor {
             "guvenlik\\s+(?:kod\\p{L}*|sifre\\p{L}*)|" +
             "islem\\s+(?:kod\\p{L}*|sifre\\p{L}*)|" +
             "sms\\s+(?:kod\\p{L}*|sifre\\p{L}*)|" +
-            "3d\\s*-?\\s*secure(?:\\s+(?:kod\\p{L}*|sifre\\p{L}*|pin))?|" +
+            "3d\\s*(?:-\\s*)?secure(?:\\s+(?:kod\\p{L}*|sifre\\p{L}*|pin))?|" +
             "sifre(?!siz)\\p{L}*|parola\\p{L}*|kodunuz\\p{L}*|kodunu\\p{L}*|kodu\\p{L}*|kod\\p{L}*|" +
             "(?:ваш\\s+)?(?:одноразов\\p{L}*\\s+)?код\\s+подтверждения|одноразов\\p{L}*\\s+(?:код\\p{L}*|парол\\p{L}*)|" +
             "(?:ваш\\s+)?(?:код|парол\\p{L}*|пин-?код\\p{L}*)|" +

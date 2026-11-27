@@ -8,11 +8,13 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.provider.ContactsContract
+import android.provider.Settings
 import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
@@ -27,6 +29,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
@@ -118,7 +122,7 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
             val localBinder = binder as BTRouterClientService.LocalBinder
             val svc = localBinder.getService()
             clientService = svc
-            svc.callback = this@ContactsActivity
+            svc.addCallback(this@ContactsActivity)
             isBound = true
 
             if (svc.hasCachedServerContacts()) {
@@ -158,6 +162,10 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         appliedLanguage = AppLocale.getLanguage(this)
         setContentView(R.layout.activity_contacts)
 
@@ -251,7 +259,7 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
         }
         val svc = clientService
         if (isBound && svc != null) {
-            svc.callback = this
+            svc.addCallback(this)
             if (svc.hasCachedServerContacts()) {
                 serverContacts = svc.getCachedServerContacts()
             }
@@ -264,8 +272,8 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
                 }
             }
             rebuildDisplayedList()
-        } else {
-            bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+        } else if (CompatUtils.hasBluetoothConnectPermission(this)) {
+            isBound = bindService(Intent(this, BTRouterClientService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
@@ -278,9 +286,7 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
 
     override fun onStop() {
         super.onStop()
-        if (clientService?.callback === this) {
-            clientService?.callback = null
-        }
+        clientService?.removeCallback(this)
     }
 
     override fun onDestroy() {
@@ -288,7 +294,7 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
         mainHandler.removeCallbacks(serverLoadTimeoutRunnable)
         contactsExecutor.shutdownNow()
         if (isBound) {
-            unbindService(serviceConnection)
+            try { unbindService(serviceConnection) } catch (_: Exception) {}
             isBound = false
         }
     }
@@ -301,10 +307,16 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_READ_CONTACTS) {
             if (hasReadContactsPermission()) {
+                getPreferences(Context.MODE_PRIVATE).edit().putInt("contacts_perm_denials", 0).apply()
                 loadClientContacts(requestPermissionIfMissing = false)
-            } else if (currentSource == BTRouterClientService.SOURCE_CLIENT) {
-                showClientPermissionBanner()
-                rebuildDisplayedList()
+            } else {
+                val prefs = getPreferences(Context.MODE_PRIVATE)
+                val denials = prefs.getInt("contacts_perm_denials", 0) + 1
+                prefs.edit().putInt("contacts_perm_denials", denials).apply()
+                if (currentSource == BTRouterClientService.SOURCE_CLIENT) {
+                    showClientPermissionBanner()
+                    rebuildDisplayedList()
+                }
             }
         }
     }
@@ -312,9 +324,11 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     private fun applySystemInsets() {
         lvContacts.clipToPadding = false
         ViewCompat.setOnApplyWindowInsetsListener(contactsRoot) { _, windowInsets ->
-            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val systemBars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             val imeAndBars = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
             )
             contactsRoot.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             lvContacts.setPadding(0, 0, 0, imeAndBars.bottom)
@@ -390,16 +404,33 @@ class ContactsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     }
 
     private fun showClientPermissionBanner() {
+        val denials = getPreferences(Context.MODE_PRIVATE).getInt("contacts_perm_denials", 0)
+        val openAppSettings = denials >= 2 &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_CONTACTS)
         showBanner(
             text = getString(R.string.contacts_grant_permission_notice),
             color = Color.parseColor("#FFB74D"),
-            actionText = getString(R.string.btn_grant_contacts_permission)
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.READ_CONTACTS),
-                REQ_READ_CONTACTS
+            actionText = getString(
+                if (openAppSettings) R.string.btn_open_app_settings else R.string.btn_grant_contacts_permission
             )
+        ) {
+            if (openAppSettings) {
+                try {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", packageName, null)
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_CONTACTS),
+                    REQ_READ_CONTACTS
+                )
+            }
         }
     }
 

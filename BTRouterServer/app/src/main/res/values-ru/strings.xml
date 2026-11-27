@@ -1,0 +1,73 @@
+<resources>
+    <string name="app_name">BT Router Server</string>
+
+    <string name="server_header_title">Server (Шлюз)</string>
+    <string name="tab_main">ГЛАВНАЯ</string>
+    <string name="tab_settings">НАСТРОЙКИ</string>
+
+    <string name="card_gateway_status">СТАТУС ШЛЮЗА</string>
+    <string name="badge_online">● В СЕТИ</string>
+    <string name="badge_waiting">● ОЖИДАНИЕ</string>
+    <string name="status_starting_service">Запуск фоновой службы...</string>
+
+    <string name="card_security_title">БЕЗОПАСНОСТЬ И ДОСТУП CLIENT</string>
+    <string name="client_not_selected">Client не выбран (подключения отклоняются)</string>
+    <string name="btn_select_client">ВЫБРАТЬ УСТРОЙСТВО CLIENT</string>
+    <string name="pairing_key_label">КЛЮЧ СОПРЯЖЕНИЯ (PSK)</string>
+    <string name="btn_show_secret">ПОКАЗАТЬ</string>
+    <string name="btn_hide_secret">СКРЫТЬ</string>
+    <string name="btn_copy_secret">КОПИР.</string>
+    <string name="btn_regenerate_secret">ОБНОВИТЬ</string>
+
+    <string name="card_system_settings_title">СИСТЕМНЫЕ НАСТРОЙКИ SERVER</string>
+    <string name="btn_app_settings">ПРАВА И БАТАРЕЯ ПРИЛОЖЕНИЯ</string>
+    <string name="btn_bt_settings">НАСТРОЙКИ BLUETOOTH</string>
+    <string name="btn_request_permissions">ЗАПРОСИТЬ РАЗРЕШЕНИЯ</string>
+
+    <string name="card_language_title">ЯЗЫК ИНТЕРФЕЙСА</string>
+    <string name="card_language_desc">Выберите язык приложения Server</string>
+    <string name="lang_russian">РУССКИЙ</string>
+    <string name="lang_english">ENGLISH</string>
+
+    <string name="card_debug_title">ОТЛАДКА (DEBUG)</string>
+    <string name="btn_test_call">ТЕСТОВЫЙ ЗВОНОК НА CLIENT</string>
+    <string name="btn_test_missed_call">ТЕСТОВЫЙ ПРОПУЩЕННЫЙ ВЫЗОВ</string>
+    <string name="btn_test_status">ОТПРАВИТЬ СТАТУС (БАТАРЕЯ / СЕТЬ)</string>
+
+    <string name="toast_secret_copied">Ключ сопряжения скопирован</string>
+    <string name="dialog_regen_title">Обновить ключ сопряжения?</string>
+    <string name="dialog_regen_message">Текущее соединение с Client будет разорвано. Новый ключ нужно будет ввести на Client.</string>
+    <string name="btn_renew">Обновить</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="btn_ok">ОК</string>
+    <string name="toast_new_secret_generated">Новый ключ сгенерирован</string>
+    <string name="status_grant_bt_start">Выдайте разрешение Bluetooth для запуска сервера...</string>
+    <string name="toast_open_settings_failed">Не удалось открыть системные настройки</string>
+    <string name="status_bt_permission_required">Требуется разрешение Bluetooth (устройства поблизости)</string>
+    <string name="allowed_client_format">Разрешён: %1$s</string>
+    <string name="toast_grant_bt_first">Сначала выдайте разрешение Bluetooth</string>
+    <string name="toast_enable_bt_server">Включите Bluetooth на Server</string>
+    <string name="dialog_no_bonded_title">Нет спаренных устройств</string>
+    <string name="dialog_no_bonded_message">Сначала спарьте Client и Server через системные настройки Bluetooth.</string>
+    <string name="device_unnamed">Без имени</string>
+    <string name="dialog_select_client_title">Выберите устройство Client</string>
+    <string name="toast_client_saved">Устройство Client сохранено</string>
+
+    <string name="service_initializing">Инициализация сервера...</string>
+    <string name="service_bt_perm_needed">Требуется разрешение Bluetooth</string>
+    <string name="service_waiting_client">Ожидание подключения Client...</string>
+    <string name="service_client_allowed_waiting">Разрешён Client — ожидание подключения...</string>
+    <string name="service_no_bt_perm">Нет разрешения BLUETOOTH_CONNECT</string>
+    <string name="service_bt_disabled">Bluetooth на Server выключен</string>
+    <string name="service_waiting_auth_client">Ожидание авторизованного Client...</string>
+    <string name="service_bt_perm_denied">Отказано в праве Bluetooth</string>
+    <string name="service_auth_error">Ошибка авторизации Client (проверьте ключ)</string>
+    <string name="service_connected_encrypted">Подключено и зашифровано: %1$s</string>
+
+    <string name="notif_channel_status_name">Работа BTRouter Server</string>
+    <string name="notif_channel_status_desc">Постоянное уведомление работы шлюза BTRouterServer</string>
+    <string name="notif_channel_hotspot_name">Управление точкой доступа</string>
+    <string name="notif_channel_hotspot_desc">Служебные уведомления-триггеры для сценариев Samsung (BTR_HOTSPOT_ON / BTR_HOTSPOT_OFF)</string>
+    <string name="notif_channel_mobile_data_name">Управление мобильным интернетом</string>
+    <string name="notif_channel_mobile_data_desc">Служебные уведомления-триггеры для сценариев Samsung (BTR_MOBILE_DATA_ON / BTR_MOBILE_DATA_OFF)</string>
+</resources>

@@ -1,3 +1,73 @@
 <resources>
     <string name="app_name">BT Router Server</string>
+
+    <string name="server_header_title">Server (Gateway)</string>
+    <string name="tab_main">MAIN</string>
+    <string name="tab_settings">SETTINGS</string>
+
+    <string name="card_gateway_status">GATEWAY STATUS</string>
+    <string name="badge_online">● ONLINE</string>
+    <string name="badge_waiting">● WAITING</string>
+    <string name="status_starting_service">Starting background service...</string>
+
+    <string name="card_security_title">CLIENT SECURITY &amp; ACCESS</string>
+    <string name="client_not_selected">Client not selected (connections rejected)</string>
+    <string name="btn_select_client">SELECT CLIENT DEVICE</string>
+    <string name="pairing_key_label">PAIRING KEY (PSK)</string>
+    <string name="btn_show_secret">SHOW</string>
+    <string name="btn_hide_secret">HIDE</string>
+    <string name="btn_copy_secret">COPY</string>
+    <string name="btn_regenerate_secret">RENEW</string>
+
+    <string name="card_system_settings_title">SERVER SYSTEM SETTINGS</string>
+    <string name="btn_app_settings">APP PERMISSIONS &amp; BATTERY</string>
+    <string name="btn_bt_settings">BLUETOOTH SETTINGS</string>
+    <string name="btn_request_permissions">REQUEST PERMISSIONS</string>
+
+    <string name="card_language_title">INTERFACE LANGUAGE</string>
+    <string name="card_language_desc">Choose Server app language</string>
+    <string name="lang_russian">RUSSIAN</string>
+    <string name="lang_english">ENGLISH</string>
+
+    <string name="card_debug_title">DEBUG</string>
+    <string name="btn_test_call">TEST CALL TO CLIENT</string>
+    <string name="btn_test_missed_call">TEST MISSED CALL</string>
+    <string name="btn_test_status">SEND STATUS (BATTERY / NETWORK)</string>
+
+    <string name="toast_secret_copied">Pairing key copied</string>
+    <string name="dialog_regen_title">Regenerate pairing key?</string>
+    <string name="dialog_regen_message">Current connection with Client will be closed. You will need to enter the new key on Client.</string>
+    <string name="btn_renew">Renew</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_ok">OK</string>
+    <string name="toast_new_secret_generated">New key generated</string>
+    <string name="status_grant_bt_start">Grant Bluetooth permission to start the server...</string>
+    <string name="toast_open_settings_failed">Failed to open system settings</string>
+    <string name="status_bt_permission_required">Bluetooth permission (nearby devices) is required</string>
+    <string name="allowed_client_format">Allowed: %1$s</string>
+    <string name="toast_grant_bt_first">Grant Bluetooth permission first</string>
+    <string name="toast_enable_bt_server">Enable Bluetooth on Server</string>
+    <string name="dialog_no_bonded_title">No paired devices</string>
+    <string name="dialog_no_bonded_message">First pair Client and Server in system Bluetooth settings.</string>
+    <string name="device_unnamed">Unnamed</string>
+    <string name="dialog_select_client_title">Select Client device</string>
+    <string name="toast_client_saved">Client device saved</string>
+
+    <string name="service_initializing">Initializing server...</string>
+    <string name="service_bt_perm_needed">Bluetooth permission required</string>
+    <string name="service_waiting_client">Waiting for Client connection...</string>
+    <string name="service_client_allowed_waiting">Client allowed — waiting for connection...</string>
+    <string name="service_no_bt_perm">Missing BLUETOOTH_CONNECT permission</string>
+    <string name="service_bt_disabled">Bluetooth on Server is off</string>
+    <string name="service_waiting_auth_client">Waiting for authorized Client...</string>
+    <string name="service_bt_perm_denied">Bluetooth permission denied</string>
+    <string name="service_auth_error">Client authentication error (check key)</string>
+    <string name="service_connected_encrypted">Connected and encrypted: %1$s</string>
+
+    <string name="notif_channel_status_name">BTRouter Server Service</string>
+    <string name="notif_channel_status_desc">Persistent status notification for BTRouterServer gateway</string>
+    <string name="notif_channel_hotspot_name">Hotspot control</string>
+    <string name="notif_channel_hotspot_desc">Routine trigger notifications for Samsung Modes &amp; Routines (BTR_HOTSPOT_ON / BTR_HOTSPOT_OFF)</string>
+    <string name="notif_channel_mobile_data_name">Mobile data control</string>
+    <string name="notif_channel_mobile_data_desc">Routine trigger notifications for Samsung Modes &amp; Routines (BTR_MOBILE_DATA_ON / BTR_MOBILE_DATA_OFF)</string>
 </resources>

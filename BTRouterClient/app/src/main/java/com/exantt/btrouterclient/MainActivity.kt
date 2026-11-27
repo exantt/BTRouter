@@ -20,6 +20,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -37,6 +39,7 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
 
     private var statusRevertRunnable: Runnable? = null
     private var hasTransientStatus = false
+    private var isWarningStatus = false
 
     // Индикаторы состояния сервера Т2
     private lateinit var mainRoot: FrameLayout
@@ -78,15 +81,17 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as BTRouterClientService.LocalBinder
-            clientService = localBinder.getService()
-            clientService?.callback = this@MainActivity
+            val svc = localBinder.getService()
+            clientService = svc
+            svc.addCallback(this@MainActivity)
             isBound = true
 
             syncUIWithService()
-            clientService?.onUiOpened()
+            svc.onUiOpened()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            clientService?.removeCallback(this@MainActivity)
             clientService = null
             isBound = false
         }
@@ -97,6 +102,10 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
         appliedLanguage = AppLocale.getLanguage(this)
         setContentView(R.layout.activity_main)
@@ -166,15 +175,12 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
         reloadChats()
         updateMissedCallsBadge()
 
-        requestNeededPermissions()
-        if (CompatUtils.hasBluetoothConnectPermission(this)) {
-            startAndBindService()
-        } else {
-            setPersistentStatus(getString(R.string.status_grant_bt_permission))
-        }
-
         if (savedInstanceState == null) {
+            requestNeededPermissions()
             handleNavigationIntent(intent)
+        }
+        if (!CompatUtils.hasBluetoothConnectPermission(this)) {
+            setPersistentStatus(getString(R.string.status_grant_bt_permission))
         }
     }
 
@@ -261,7 +267,12 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
 
     private fun applySystemInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(mainRoot) { _, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val isRtl = ViewCompat.getLayoutDirection(mainRoot) == ViewCompat.LAYOUT_DIRECTION_RTL
+            val startInset = if (isRtl) insets.right else insets.left
+            val endInset = if (isRtl) insets.left else insets.right
 
             mainContentColumn.setPadding(
                 dpToPx(12) + insets.left,
@@ -277,12 +288,12 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
             )
 
             (layoutMissedCallsFab.layoutParams as FrameLayout.LayoutParams).let { lp ->
-                lp.leftMargin = dpToPx(18) + insets.left
+                lp.marginStart = dpToPx(18) + startInset
                 lp.bottomMargin = dpToPx(18) + insets.bottom
                 layoutMissedCallsFab.layoutParams = lp
             }
             (fabNewSms.layoutParams as FrameLayout.LayoutParams).let { lp ->
-                lp.rightMargin = dpToPx(18) + insets.right
+                lp.marginEnd = dpToPx(18) + endInset
                 lp.bottomMargin = dpToPx(18) + insets.bottom
                 fabNewSms.layoutParams = lp
             }
@@ -295,16 +306,19 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     }
 
     private fun requestNeededPermissions() {
-        val permissions = mutableListOf<String>()
+        val candidates = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            candidates.add(Manifest.permission.BLUETOOTH_CONNECT)
+            candidates.add(Manifest.permission.BLUETOOTH_SCAN)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            candidates.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        if (permissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 1)
+        val missing = candidates.filter {
+            ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
         }
     }
 
@@ -317,7 +331,7 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
             startService(serviceIntent)
         }
         if (!isBound) {
-            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+            isBound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
@@ -332,10 +346,11 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
         reloadChats()
         updateMissedCallsBadge()
 
-        if (isBound) {
-            clientService?.callback = this
+        val svc = clientService
+        if (isBound && svc != null) {
+            svc.addCallback(this)
             syncUIWithService()
-            clientService?.onUiOpened()
+            svc.onUiOpened()
         } else if (CompatUtils.hasBluetoothConnectPermission(this)) {
             startAndBindService()
         }
@@ -364,16 +379,17 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     override fun onStop() {
         super.onStop()
         chatRepo.removeListener(this)
-        if (clientService?.callback === this) {
-            clientService?.callback = null
-        }
+        clientService?.removeCallback(this)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cancelStatusRevertTimer()
         if (isBound) {
-            unbindService(serviceConnection)
+            try {
+                unbindService(serviceConnection)
+            } catch (_: Exception) {
+            }
             isBound = false
         }
     }
@@ -401,8 +417,13 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     }
 
     private fun updateMissedCallsBadge() {
-        val lastViewedMs = BTRouterClientService.getMissedCallsLastViewedMs(this)
-        val unreadMissed = chatRepo.getUnreadMissedCallsCount(lastViewedMs)
+        val lastViewedId = BTRouterClientService.getMissedCallsLastViewedId(this)
+        val unreadMissed = if (lastViewedId >= 0L) {
+            chatRepo.getUnreadMissedCallsCountAfterId(lastViewedId)
+        } else {
+            val lastViewedMs = BTRouterClientService.getMissedCallsLastViewedMs(this)
+            chatRepo.getUnreadMissedCallsCount(lastViewedMs)
+        }
         if (unreadMissed > 0) {
             tvMissedCallsBadge.text = if (unreadMissed > 99) "99+" else unreadMissed.toString()
             tvMissedCallsBadge.visibility = View.VISIBLE
@@ -577,7 +598,12 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
         restoredText: String?
     ) {
         val text = if (ok) message else getString(R.string.status_error_prefix, message)
-        showTransientStatus(text, 3000L)
+        showTransientStatus(text, 3000L, isWarning = !ok)
+    }
+
+    override fun onToggleVerifyFailed(commandName: String, targetEnabled: Boolean, warningMessage: String) {
+        showTransientStatus(warningMessage, durationMs = 6_000L, isWarning = true)
+        Toast.makeText(this, warningMessage, Toast.LENGTH_LONG).show()
     }
 
     // --- Управление временными/постоянными сообщениями статуса (фикс микробага) ---
@@ -590,17 +616,25 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     private fun setPersistentStatus(message: String) {
         cancelStatusRevertTimer()
         hasTransientStatus = false
+        isWarningStatus = false
+        tvStatus.setTextColor(Color.parseColor("#888888"))
         tvStatus.text = message
     }
 
-    private fun showTransientStatus(message: String, durationMs: Long = 3000L) {
+    private fun showTransientStatus(message: String, durationMs: Long = 3000L, isWarning: Boolean = false) {
         cancelStatusRevertTimer()
         hasTransientStatus = true
+        isWarningStatus = isWarning
+        tvStatus.setTextColor(
+            if (isWarning) Color.parseColor("#FFB74D") else Color.parseColor("#888888")
+        )
         tvStatus.text = message
         val runnable = Runnable {
             statusRevertRunnable = null
             hasTransientStatus = false
+            isWarningStatus = false
             if (isFinishing || isDestroyed) return@Runnable
+            tvStatus.setTextColor(Color.parseColor("#888888"))
             if (clientService?.isCallActive == true) {
                 tvStatus.text = ""
             } else {
@@ -612,6 +646,7 @@ class MainActivity : AppCompatActivity(), BTRouterClientService.ServiceCallback,
     }
 
     private fun shortenTransientStatusTo(delayMs: Long) {
+        if (isWarningStatus) return
         val runnable = statusRevertRunnable ?: return
         tvStatus.removeCallbacks(runnable)
         tvStatus.postDelayed(runnable, delayMs)

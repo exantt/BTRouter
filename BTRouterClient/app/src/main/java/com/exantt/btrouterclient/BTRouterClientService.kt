@@ -21,6 +21,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.telephony.SmsMessage
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
@@ -36,6 +37,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -69,6 +71,7 @@ class BTRouterClientService : Service() {
         const val KEY_RECENT_SMS_CONTACTS = "recent_sms_contacts"
         const val KEY_LAST_CONTACTS_SOURCE = "last_contacts_source"
         private const val KEY_MISSED_CALLS_LAST_VIEWED_MS = "missed_calls_last_viewed_ms"
+        private const val KEY_MISSED_CALLS_LAST_VIEWED_ID = "missed_calls_last_viewed_id"
         const val SOURCE_CLIENT = "client"
         const val SOURCE_SERVER = "server"
         private const val KEY_PENDING_SMS_QUEUE = "pending_sms_queue"
@@ -80,6 +83,7 @@ class BTRouterClientService : Service() {
         const val CALL_CHANNEL_ID = "CallChannel"
         const val SMS_CHANNEL_ID = "SmsChannel"
         const val MISSED_CHANNEL_ID = "MissedCallChannel"
+        const val ALERT_CHANNEL_ID = "ToggleAlertChannel"
 
         const val STATUS_NOTIFICATION_ID = 1001
         const val CALL_NOTIFICATION_ID = 1
@@ -89,11 +93,13 @@ class BTRouterClientService : Service() {
         private const val PENDING_SMS_TTL_MS = 30 * 60_000L
         private const val MAX_QUEUED_SMS = 20
         private const val MAX_CLIENT_SMS_CHARS = 1500
+        private const val MAX_CLIENT_SMS_PARTS = 10
         private const val MAX_INCOMING_SMS_QUEUE = 50
         private const val MAX_SEEN_EVENTS = 500
         private const val EVENT_DEDUP_TTL_MS = 24 * 60 * 60_000L
-        private const val HOTSPOT_PENDING_WINDOW_MS = 5_000L
-        private const val MOBILE_DATA_PENDING_WINDOW_MS = 5_000L
+        private const val HOTSPOT_PENDING_WINDOW_MS = 8_000L
+        private const val MOBILE_DATA_PENDING_WINDOW_MS = 8_000L
+        private const val TOGGLE_PROBE_DELAY_MS = 6_000L
 
         fun getTargetMac(context: Context): String? =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_TARGET_MAC, null)
@@ -169,6 +175,17 @@ class BTRouterClientService : Service() {
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .putLong(KEY_MISSED_CALLS_LAST_VIEWED_MS, viewedAtMs)
+                .apply()
+        }
+
+        fun getMissedCallsLastViewedId(context: Context): Long =
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getLong(KEY_MISSED_CALLS_LAST_VIEWED_ID, -1L)
+
+        fun markMissedCallsViewedId(context: Context, maxCallId: Long) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putLong(KEY_MISSED_CALLS_LAST_VIEWED_ID, maxOf(0L, maxCallId))
                 .apply()
         }
 
@@ -274,6 +291,7 @@ class BTRouterClientService : Service() {
         fun onServerContactsLoaded(ok: Boolean, contacts: List<ContactsHelper.ContactEntry>, errorMessage: String?) {}
         fun onHotspotStateChanged(hotspotState: Int, pendingTarget: Int, requestedState: Int) {}
         fun onMobileDataStateChanged(mobileDataState: Int, pendingTarget: Int, requestedState: Int) {}
+        fun onToggleVerifyFailed(commandName: String, targetEnabled: Boolean, warningMessage: String) {}
     }
 
     inner class LocalBinder : Binder() {
@@ -309,8 +327,15 @@ class BTRouterClientService : Service() {
     )
 
     private val binder = LocalBinder()
-    @Volatile
-    var callback: ServiceCallback? = null
+    private val callbacks = CopyOnWriteArraySet<ServiceCallback>()
+
+    fun addCallback(cb: ServiceCallback) {
+        callbacks.add(cb)
+    }
+
+    fun removeCallback(cb: ServiceCallback) {
+        callbacks.remove(cb)
+    }
 
     @Volatile
     private var localizedContext: Context? = null
@@ -319,9 +344,12 @@ class BTRouterClientService : Service() {
     private lateinit var chatRepo: ChatRepository
     private var bluetoothAdapter: BluetoothAdapter? = null
     @Volatile
+    private var connectingSocket: BluetoothSocket? = null
+    @Volatile
     private var activeSocket: BluetoothSocket? = null
     @Volatile
     private var activeChannel: BtProtocol.SecureChannel? = null
+    private val initLock = Any()
     @Volatile
     private var isInitialized = false
     @Volatile
@@ -351,6 +379,8 @@ class BTRouterClientService : Service() {
     private var lastStatusReceivedTime = 0L
     @Volatile
     private var lastServerActivityMs = 0L
+    @Volatile
+    private var lastClientSentMs = 0L
     @Volatile
     private var missedPongs = 0
 
@@ -385,60 +415,60 @@ class BTRouterClientService : Service() {
         private val noConnRes: Int,
         private val turningOnRes: Int,
         private val turningOffRes: Int,
+        private val verifyFailedOnRes: Int,
+        private val verifyFailedOffRes: Int,
         private val notifyChange: (ServiceCallback, Int, Int, Int) -> Unit
     ) {
         val lock = Any()
-        @Volatile var actualState: Int = -1
-        @Volatile var requestedState: Int = -1
-        @Volatile var pendingTarget: Int = -1
-        @Volatile var pendingUntilMs: Long = 0L
+        val state = RemoteToggleState()
+        var probeRunnable: Runnable? = null
         var timeoutRunnable: Runnable? = null
 
-        fun applyStatus(rawValue: Int): Triple<Int, Int, Int> {
-            val normalized = if (rawValue == 0 || rawValue == 1) rawValue else -1
+        private fun cancelRunnablesLocked() {
+            probeRunnable?.let { mainHandler.removeCallbacks(it) }
+            probeRunnable = null
+            timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
+            timeoutRunnable = null
+        }
+
+        fun applyStatus(rawValue: Int): RemoteToggleState.StatusResult {
             synchronized(lock) {
-                actualState = normalized
-                if (normalized == 0 || normalized == 1) {
-                    if (pendingTarget == normalized || System.currentTimeMillis() >= pendingUntilMs) {
-                        pendingTarget = -1
-                        pendingUntilMs = 0L
-                        timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-                        timeoutRunnable = null
-                    }
+                val res = state.applyStatus(rawValue, System.currentTimeMillis())
+                if (res.confirmed || res.timedOutUnchanged) {
+                    cancelRunnablesLocked()
                 }
-                return Triple(actualState, pendingTarget, requestedState)
+                return res
+            }
+        }
+
+        fun handleVerifyTimeout(targetEnabled: Boolean) {
+            val warningMsg = str(if (targetEnabled) verifyFailedOnRes else verifyFailedOffRes)
+            if (callbacks.isNotEmpty()) {
+                notifyUi { it.onToggleVerifyFailed(commandName, targetEnabled, warningMsg) }
+            } else {
+                showToggleAlertNotification(warningMsg)
             }
         }
 
         fun onAckFailed() {
-            val stateSnap: Int
-            synchronized(lock) {
-                pendingTarget = -1
-                pendingUntilMs = 0L
-                requestedState = -1
-                timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-                timeoutRunnable = null
-                stateSnap = actualState
+            val snap = synchronized(lock) {
+                cancelRunnablesLocked()
+                state.onAckFailed()
             }
-            notifyUi { notifyChange(it, stateSnap, -1, -1) }
+            notifyUi { notifyChange(it, snap.actualState, snap.pendingTarget, snap.requestedState) }
         }
 
         fun reset() {
-            synchronized(lock) {
-                actualState = -1
-                requestedState = -1
-                pendingTarget = -1
-                pendingUntilMs = 0L
-                timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-                timeoutRunnable = null
+            val snap = synchronized(lock) {
+                cancelRunnablesLocked()
+                state.reset()
             }
-            notifyUi { notifyChange(it, -1, -1, -1) }
+            notifyUi { notifyChange(it, snap.actualState, snap.pendingTarget, snap.requestedState) }
         }
 
         fun cancelTimer() {
             synchronized(lock) {
-                timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-                timeoutRunnable = null
+                cancelRunnablesLocked()
             }
         }
 
@@ -456,43 +486,51 @@ class BTRouterClientService : Service() {
                 return Pair(false, str(R.string.error_no_active_channel))
             }
             val target = if (enabled) 1 else 0
-            val runnable = object : Runnable {
+            val probe = object : Runnable {
                 override fun run() {
-                    val curState: Int
-                    val curRequested: Int
-                    var cleared = false
-                    synchronized(lock) {
-                        if (timeoutRunnable === this) {
-                            pendingTarget = -1
-                            pendingUntilMs = 0L
-                            timeoutRunnable = null
-                            cleared = true
+                    val shouldProbe = synchronized(lock) {
+                        val match = (probeRunnable === this && state.pendingTarget == target)
+                        if (probeRunnable === this) {
+                            probeRunnable = null
                         }
-                        curState = actualState
-                        curRequested = requestedState
+                        match
                     }
-                    if (cleared) {
-                        if (isConnected && activeChannel != null) {
-                            sendJson(JSONObject().apply {
-                                put("t", "GET_STATUS")
-                                put("id", nextCmdId())
-                            })
-                        }
-                        notifyUi { notifyChange(it, curState, -1, curRequested) }
+                    if (shouldProbe && isConnected && activeChannel != null) {
+                        sendJson(JSONObject().apply {
+                            put("t", "GET_STATUS")
+                            put("id", nextCmdId())
+                        })
                     }
                 }
             }
-            val curActual: Int
-            synchronized(lock) {
-                requestedState = target
-                pendingTarget = target
-                pendingUntilMs = System.currentTimeMillis() + pendingWindowMs
-                timeoutRunnable?.let { mainHandler.removeCallbacks(it) }
-                timeoutRunnable = runnable
-                curActual = actualState
+            val timeout = object : Runnable {
+                override fun run() {
+                    val res = synchronized(lock) {
+                        if (timeoutRunnable === this) {
+                            timeoutRunnable = null
+                            probeRunnable?.let { mainHandler.removeCallbacks(it) }
+                            probeRunnable = null
+                            state.onTimeout()
+                        } else {
+                            null
+                        }
+                    } ?: return
+                    val snap = res.snapshot
+                    notifyUi { notifyChange(it, snap.actualState, snap.pendingTarget, snap.requestedState) }
+                    if (res.timedOutUnchanged && isConnected) {
+                        handleVerifyTimeout(res.failedTarget == 1)
+                    }
+                }
             }
-            mainHandler.postDelayed(runnable, pendingWindowMs + 100L)
-            notifyUi { notifyChange(it, curActual, target, target) }
+            val snap = synchronized(lock) {
+                cancelRunnablesLocked()
+                probeRunnable = probe
+                timeoutRunnable = timeout
+                state.onDispatched(target, System.currentTimeMillis(), pendingWindowMs)
+            }
+            mainHandler.postDelayed(probe, TOGGLE_PROBE_DELAY_MS)
+            mainHandler.postDelayed(timeout, pendingWindowMs)
+            notifyUi { notifyChange(it, snap.actualState, snap.pendingTarget, snap.requestedState) }
             return Pair(true, str(if (enabled) turningOnRes else turningOffRes))
         }
     }
@@ -503,6 +541,8 @@ class BTRouterClientService : Service() {
         noConnRes = R.string.hotspot_no_connection,
         turningOnRes = R.string.hotspot_turning_on_status,
         turningOffRes = R.string.hotspot_turning_off_status,
+        verifyFailedOnRes = R.string.hotspot_verify_failed_on,
+        verifyFailedOffRes = R.string.hotspot_verify_failed_off,
         notifyChange = { cb, state, pending, requested -> cb.onHotspotStateChanged(state, pending, requested) }
     )
 
@@ -512,6 +552,8 @@ class BTRouterClientService : Service() {
         noConnRes = R.string.mobile_data_no_connection,
         turningOnRes = R.string.mobile_data_turning_on_status,
         turningOffRes = R.string.mobile_data_turning_off_status,
+        verifyFailedOnRes = R.string.mobile_data_verify_failed_on,
+        verifyFailedOffRes = R.string.mobile_data_verify_failed_off,
         notifyChange = { cb, state, pending, requested -> cb.onMobileDataStateChanged(state, pending, requested) }
     )
 
@@ -519,17 +561,17 @@ class BTRouterClientService : Service() {
     var lastDataStatus: String = ""
         private set
     val lastHotspotState: Int
-        get() = hotspotTracker.actualState
+        get() = hotspotTracker.state.actualState
     val lastRequestedHotspotState: Int
-        get() = hotspotTracker.requestedState
+        get() = hotspotTracker.state.requestedState
     val hotspotPendingTarget: Int
-        get() = hotspotTracker.pendingTarget
+        get() = hotspotTracker.state.pendingTarget
     val lastMobileDataState: Int
-        get() = mobileDataTracker.actualState
+        get() = mobileDataTracker.state.actualState
     val lastRequestedMobileDataState: Int
-        get() = mobileDataTracker.requestedState
+        get() = mobileDataTracker.state.requestedState
     val mobileDataPendingTarget: Int
-        get() = mobileDataTracker.pendingTarget
+        get() = mobileDataTracker.state.pendingTarget
     @Volatile
     var lastStatusText: String = ""
         private set
@@ -614,93 +656,114 @@ class BTRouterClientService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        chatRepo = ChatRepository.getInstance(this)
         localizedContext = AppLocale.wrap(this)
-        pendingNotifTitle = str(R.string.notif_title_waiting)
-        pendingNotifDetail = str(R.string.status_waiting_connection)
-        lastStatusText = formatConnectionStatus(ConnectionStatus.Preparing)
-
         createNotificationChannels()
+        ensureInitialized()
+    }
 
-        // Безопасный выход без ForegroundServiceDidNotStartInTimeException / SecurityException
-        if (!CompatUtils.hasBluetoothConnectPermission(this)) {
-            Log.w(TAG, "Нет разрешения BLUETOOTH_CONNECT — остановка клиентской службы")
-            try {
-                val fallbackNotification = buildStatusNotification(
-                    title = str(R.string.notif_title_permission_required),
-                    contentText = "🔋 --%   📶 --   🌐 --",
-                    detailText = str(R.string.notif_detail_grant_bt)
-                )
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(STATUS_NOTIFICATION_ID, fallbackNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-                } else {
-                    startForeground(STATUS_NOTIFICATION_ID, fallbackNotification)
+    private fun ensureInitialized(): Boolean {
+        synchronized(initLock) {
+            if (isInitialized) return true
+
+            chatRepo = ChatRepository.getInstance(this)
+            localizedContext = AppLocale.wrap(this)
+            pendingNotifTitle = str(R.string.notif_title_waiting)
+            pendingNotifDetail = str(R.string.status_waiting_connection)
+            lastStatusText = formatConnectionStatus(ConnectionStatus.Preparing)
+
+            createNotificationChannels()
+
+            // Безопасный выход без ForegroundServiceDidNotStartInTimeException / SecurityException
+            if (!CompatUtils.hasBluetoothConnectPermission(this)) {
+                Log.w(TAG, "Нет разрешения BLUETOOTH_CONNECT — остановка клиентской службы")
+                try {
+                    val fallbackNotification = buildStatusNotification(
+                        title = str(R.string.notif_title_permission_required),
+                        contentText = "🔋 --%   📶 --   🌐 --",
+                        detailText = str(R.string.notif_detail_grant_bt)
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+                    } else {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotification)
+                    }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } catch (_: Exception) {
                 }
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } catch (_: Exception) {
+                stopSelf()
+                return false
             }
-            stopSelf()
-            return
+
+            if (!hasServerConfig()) {
+                pendingNotifTitle = str(R.string.notif_title_setup_required)
+                pendingNotifDetail = str(R.string.notif_detail_setup_required)
+                connectionStatus = ConnectionStatus.NeedConfigShort
+                lastStatusText = formatConnectionStatus(connectionStatus)
+            }
+
+            val initialNotification = buildStatusNotification(
+                title = pendingNotifTitle,
+                contentText = pendingNotifContent,
+                detailText = pendingNotifDetail
+            )
+            lastPostedNotifTitle = pendingNotifTitle
+            lastPostedNotifContent = pendingNotifContent
+            lastPostedNotifDetail = pendingNotifDetail
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(STATUS_NOTIFICATION_ID, initialNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            } else {
+                startForeground(STATUS_NOTIFICATION_ID, initialNotification)
+            }
+
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            chatRepo.markStaleSendingAsUnknown()
+            loadPendingSmsQueue()
+
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BTRouterClient:ServiceWakeLock").apply {
+                setReferenceCounted(false)
+            }
+            isScreenOn = powerManager.isInteractive
+
+            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            bluetoothAdapter = bluetoothManager.adapter
+
+            ContextCompat.registerReceiver(
+                this,
+                btStateReceiver,
+                IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+
+            val screenFilter = IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            }
+            ContextCompat.registerReceiver(
+                this,
+                screenStateReceiver,
+                screenFilter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
+
+            ContextCompat.registerReceiver(
+                this,
+                statusNotifDismissReceiver,
+                IntentFilter(ACTION_RESTORE_STATUS_NOTIFICATION),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+
+            isInitialized = true
+            thread(name = "BTConnectionLoop") { runConnectionLoop() }
+            return true
         }
-
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        loadPendingSmsQueue()
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BTRouterClient:ServiceWakeLock").apply {
-            setReferenceCounted(false)
-        }
-        isScreenOn = powerManager.isInteractive
-
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
-
-        ContextCompat.registerReceiver(
-            this,
-            btStateReceiver,
-            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-
-        val screenFilter = IntentFilter().apply {
-            addAction(Intent.ACTION_SCREEN_ON)
-            addAction(Intent.ACTION_SCREEN_OFF)
-        }
-        ContextCompat.registerReceiver(
-            this,
-            screenStateReceiver,
-            screenFilter,
-            ContextCompat.RECEIVER_EXPORTED
-        )
-
-        if (!hasServerConfig()) {
-            pendingNotifTitle = str(R.string.notif_title_setup_required)
-            pendingNotifDetail = str(R.string.notif_detail_setup_required)
-            connectionStatus = ConnectionStatus.NeedConfigShort
-            lastStatusText = formatConnectionStatus(connectionStatus)
-        }
-
-        val initialNotification = buildStatusNotification(
-            title = pendingNotifTitle,
-            contentText = pendingNotifContent,
-            detailText = pendingNotifDetail
-        )
-        lastPostedNotifTitle = pendingNotifTitle
-        lastPostedNotifContent = pendingNotifContent
-        lastPostedNotifDetail = pendingNotifDetail
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(STATUS_NOTIFICATION_ID, initialNotification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-        } else {
-            startForeground(STATUS_NOTIFICATION_ID, initialNotification)
-        }
-
-        isInitialized = true
-        thread(name = "BTConnectionLoop") { runConnectionLoop() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!isInitialized) {
+        if (!ensureInitialized()) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -748,6 +811,8 @@ class BTRouterClientService : Service() {
 
     fun onConfigUpdated() {
         authFailedPause = false
+        try { connectingSocket?.close() } catch (_: Exception) {}
+        connectingSocket = null
         try { activeSocket?.close() } catch (_: Exception) {}
         activeSocket = null
         activeChannel = null
@@ -790,6 +855,7 @@ class BTRouterClientService : Service() {
         val raw = prefs.getString(KEY_PENDING_SMS_QUEUE, null) ?: return
         val now = System.currentTimeMillis()
         var dirty = false
+        val expiredCmdIds = mutableListOf<String>()
         synchronized(queueLock) {
             pendingSmsQueue.clear()
             try {
@@ -801,6 +867,9 @@ class BTRouterClientService : Service() {
                     val body = obj.optString("body", "")
                     val createdAt = obj.optLong("createdAtMs", 0L)
                     if (cmdId.isEmpty() || number.isEmpty() || body.isEmpty() || (now - createdAt > PENDING_SMS_TTL_MS)) {
+                        if (cmdId.isNotEmpty()) {
+                            expiredCmdIds.add(cmdId)
+                        }
                         dirty = true
                         continue
                     }
@@ -814,9 +883,12 @@ class BTRouterClientService : Service() {
                 persistPendingSmsQueueLocked()
             }
         }
+        for (expiredId in expiredCmdIds) {
+            repo().updateOutgoingMessageStatus(expiredId, ChatLogic.STATUS_FAILED)
+        }
     }
 
-    private fun persistPendingSmsQueueLocked() {
+    private fun persistPendingSmsQueueLocked(sync: Boolean = false) {
         if (!this::prefs.isInitialized) return
         val arr = JSONArray()
         for (sms in pendingSmsQueue) {
@@ -827,7 +899,12 @@ class BTRouterClientService : Service() {
                 put("createdAtMs", sms.createdAtMs)
             })
         }
-        prefs.edit().putString(KEY_PENDING_SMS_QUEUE, arr.toString()).apply()
+        val editor = prefs.edit().putString(KEY_PENDING_SMS_QUEUE, arr.toString())
+        if (sync) {
+            editor.commit()
+        } else {
+            editor.apply()
+        }
     }
 
     @Synchronized
@@ -957,6 +1034,7 @@ class BTRouterClientService : Service() {
                 var handshakeWatchdog: ScheduledFuture<*>? = null
                 try {
                     currentSocket = serverDevice.createRfcommSocketToServiceRecord(BtProtocol.APP_UUID)
+                    connectingSocket = currentSocket
                     val socketToGuard = currentSocket
                     handshakeWatchdog = scheduler.schedule({
                         Log.w(TAG, "Таймаут подключения/рукопожатия клиента — закрываю сокет")
@@ -970,6 +1048,7 @@ class BTRouterClientService : Service() {
                     val masterKey = BtProtocol.deriveMasterKey(secret)
                     channel = BtProtocol.performClientHandshake(input, output, masterKey)
                 } finally {
+                    connectingSocket = null
                     handshakeWatchdog?.cancel(false)
                     releasePulseWakeLock(force = false)
                 }
@@ -979,6 +1058,7 @@ class BTRouterClientService : Service() {
                 activeSocket = currentSocket
                 activeChannel = channel
                 lastServerActivityMs = System.currentTimeMillis()
+                lastClientSentMs = lastServerActivityMs
                 missedPongs = 0
 
                 notifyConnected(ConnectionStatus.Connected)
@@ -993,16 +1073,22 @@ class BTRouterClientService : Service() {
                 keepaliveFuture = scheduler.scheduleAtFixedRate({
                     if (!isRunning || activeSocket !== guardedSocket || !isConnected) return@scheduleAtFixedRate
                     val now = System.currentTimeMillis()
-                    if (now - lastServerActivityMs < 55_000L) {
+                    val serverQuiet = (now - lastServerActivityMs) >= 55_000L
+                    val clientQuiet = (now - lastClientSentMs) >= 55_000L
+                    if (!serverQuiet && !clientQuiet) {
                         missedPongs = 0
                         return@scheduleAtFixedRate
                     }
-                    if (missedPongs >= 2) {
-                        Log.w(TAG, "Нет ответа на 2 PING подряд — закрываю мёртвый сокет")
-                        try { guardedSocket.close() } catch (_: Exception) {}
-                        return@scheduleAtFixedRate
+                    if (serverQuiet) {
+                        if (missedPongs >= 2) {
+                            Log.w(TAG, "Нет ответа на 2 PING подряд — закрываю мёртвый сокет")
+                            try { guardedSocket.close() } catch (_: Exception) {}
+                            return@scheduleAtFixedRate
+                        }
+                        missedPongs++
+                    } else {
+                        missedPongs = 0
                     }
-                    missedPongs++
                     acquirePulseWakeLock(3_000L, lockFloor = false)
                     sendJson(JSONObject().apply {
                         put("t", "PING")
@@ -1072,15 +1158,16 @@ class BTRouterClientService : Service() {
     }
 
     private inline fun notifyUi(crossinline action: (ServiceCallback) -> Unit) {
-        val cb = callback
-        if (cb != null) {
+        if (callbacks.isNotEmpty()) {
             mainHandler.post {
-                callback?.let { action(it) }
+                for (cb in callbacks) {
+                    action(cb)
+                }
             }
         }
     }
 
-    private fun isDuplicateEventId(eventId: String): Boolean {
+    private fun isEventIdSeen(eventId: String): Boolean {
         if (eventId.isEmpty()) return false
         val now = System.currentTimeMillis()
         synchronized(seenEventsLock) {
@@ -1090,12 +1177,21 @@ class BTRouterClientService : Service() {
                     iter.remove()
                 }
             }
-
             val existing = seenEvents[eventId]
-            if (existing != null && existing.expiresAtMs > now) {
-                return true
-            }
+            return existing != null && existing.expiresAtMs > now
+        }
+    }
 
+    private fun markEventIdSeen(eventId: String) {
+        if (eventId.isEmpty()) return
+        val now = System.currentTimeMillis()
+        synchronized(seenEventsLock) {
+            val iter = seenEvents.entries.iterator()
+            while (iter.hasNext()) {
+                if (iter.next().value.expiresAtMs <= now) {
+                    iter.remove()
+                }
+            }
             if (seenEvents.size >= MAX_SEEN_EVENTS) {
                 val oldestKey = seenEvents.keys.firstOrNull()
                 if (oldestKey != null) {
@@ -1103,7 +1199,6 @@ class BTRouterClientService : Service() {
                 }
             }
             seenEvents[eventId] = SeenEntry(now + EVENT_DEDUP_TTL_MS)
-            return false
         }
     }
 
@@ -1121,8 +1216,21 @@ class BTRouterClientService : Service() {
                 // Активность и сброс missedPongs уже обновлены при чтении кадра
             }
 
+            "PING" -> {
+                sendJson(JSONObject().apply {
+                    put("t", "PONG")
+                    put("ts", json.optLong("ts", 0L))
+                })
+            }
+
             "STATUS_UPDATE" -> {
                 lastStatusReceivedTime = System.currentTimeMillis()
+                if (lastStatusReceivedTime - lastClientSentMs >= 55_000L) {
+                    sendJson(JSONObject().apply {
+                        put("t", "PING")
+                        put("ts", lastStatusReceivedTime)
+                    })
+                }
                 val batteryPct = json.optInt("battery", -1)
                 val isCharging = json.optBoolean("charging", false)
                 val operator = json.optString("operator", "Неизвестно")
@@ -1131,8 +1239,10 @@ class BTRouterClientService : Service() {
                 val callRinging = json.optBoolean("callRinging", false)
                 val callerNumber = json.optString("callerNumber", "")
                 val callerName = json.optString("callerName", "")
-                val (hsState, hsPending, hsRequested) = hotspotTracker.applyStatus(json.optInt("hotspot", -1))
-                val (mdState, mdPending, mdRequested) = mobileDataTracker.applyStatus(json.optInt("mobileData", -1))
+                val hsRes = hotspotTracker.applyStatus(json.optInt("hotspot", -1))
+                val mdRes = mobileDataTracker.applyStatus(json.optInt("mobileData", -1))
+                val hsSnap = hsRes.snapshot
+                val mdSnap = mdRes.snapshot
 
                 lastBatteryPct = batteryPct
                 lastIsCharging = isCharging
@@ -1149,8 +1259,15 @@ class BTRouterClientService : Service() {
 
                 notifyUi {
                     it.onStatusUpdated(batteryPct, isCharging, operator, signalLevel, dataStatus)
-                    it.onHotspotStateChanged(hsState, hsPending, hsRequested)
-                    it.onMobileDataStateChanged(mdState, mdPending, mdRequested)
+                    it.onHotspotStateChanged(hsSnap.actualState, hsSnap.pendingTarget, hsSnap.requestedState)
+                    it.onMobileDataStateChanged(mdSnap.actualState, mdSnap.pendingTarget, mdSnap.requestedState)
+                }
+
+                if (hsRes.timedOutUnchanged && isConnected) {
+                    hotspotTracker.handleVerifyTimeout(hsRes.failedTarget == 1)
+                }
+                if (mdRes.timedOutUnchanged && isConnected) {
+                    mobileDataTracker.handleVerifyTimeout(mdRes.failedTarget == 1)
                 }
 
                 if (callRinging && callerNumber.isNotEmpty()) {
@@ -1198,18 +1315,19 @@ class BTRouterClientService : Service() {
 
             "SMS_RECV" -> {
                 val eventId = json.optString("eventId", "")
-                if (eventId.isNotEmpty()) {
-                    sendEventAck(eventId)
-                }
-
-                val number = json.optString("number", "Неизвестный")
+                val number = json.optString("number", "").ifBlank { "Неизвестный" }
                 val name = json.optString("name", "")
                 val body = json.optString("body", "")
                 val ts = json.optLong("ts", System.currentTimeMillis())
                 val isSync = json.optBoolean("isSync", false)
 
+                if (eventId.isNotEmpty() && repo().hasMessageEventId(eventId)) {
+                    sendEventAck(eventId)
+                    return
+                }
+
                 val effectiveEventId = eventId.ifEmpty { "sms_no_id:${ts}:${number.hashCode()}:${body.hashCode()}" }
-                if (isDuplicateEventId(effectiveEventId) || repo().hasMessageEventId(effectiveEventId)) {
+                if (eventId.isEmpty() && (isEventIdSeen(effectiveEventId) || repo().hasMessageEventId(effectiveEventId))) {
                     return
                 }
 
@@ -1223,7 +1341,7 @@ class BTRouterClientService : Service() {
                     false
                 }
 
-                val (chatKey, wasArchived) = repo().recordIncomingSms(
+                val recordRes = repo().recordIncomingSms(
                     eventId = effectiveEventId,
                     rawNumber = number,
                     senderName = name,
@@ -1234,33 +1352,43 @@ class BTRouterClientService : Service() {
                     isSync = isSync
                 )
 
+                markEventIdSeen(effectiveEventId)
+                if (eventId.isNotEmpty()) {
+                    sendEventAck(eventId)
+                }
+
                 val localizedSender = ServerMessageLocalizer.localizeSenderNumber(
                     number,
                     AppLocale.isEnglish(locContext())
                 )
                 val displaySender = if (name.isNotEmpty()) "$name ($localizedSender)" else localizedSender
 
-                if (!wasArchived && repo().activeChatKey != chatKey) {
-                    showSmsNotification(displaySender, body, ts, chatKey, otpCode, shouldAutoCopy)
+                if (recordRes.inserted && !recordRes.wasArchived && repo().activeChatKey != recordRes.chatKey) {
+                    showSmsNotification(displaySender, body, ts, recordRes.chatKey, otpCode, shouldAutoCopy)
                 }
             }
 
             "MISSED_CALL" -> {
                 val eventId = json.optString("eventId", "")
-                if (eventId.isNotEmpty()) {
-                    sendEventAck(eventId)
-                }
-
-                val number = json.optString("number", "Скрытый номер")
+                val number = json.optString("number", "").ifBlank { "Скрытый номер" }
                 val name = json.optString("name", "")
                 val timestamp = json.optLong("ts", System.currentTimeMillis())
 
+                if (eventId.isNotEmpty() && repo().hasMissedCallEventId(eventId)) {
+                    sendEventAck(eventId)
+                    return
+                }
+
                 val effectiveEventId = eventId.ifEmpty { "missed_no_id:${number}:$timestamp" }
-                if (isDuplicateEventId(effectiveEventId) || repo().hasMissedCallEventId(effectiveEventId)) {
+                if (eventId.isEmpty() && (isEventIdSeen(effectiveEventId) || repo().hasMissedCallEventId(effectiveEventId))) {
                     return
                 }
 
                 repo().recordMissedCall(effectiveEventId, number, name, timestamp)
+                markEventIdSeen(effectiveEventId)
+                if (eventId.isNotEmpty()) {
+                    sendEventAck(eventId)
+                }
 
                 val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
                 val formattedTime = timeFormat.format(Date(timestamp))
@@ -1305,15 +1433,27 @@ class BTRouterClientService : Service() {
             "SMS_SENT" -> {
                 val cmdId = json.optString("id", "")
                 val ok = json.optBoolean("ok", false)
+                val statusStr = json.optString("status", "")
+                val isUnknown = !ok && statusStr == "unknown"
                 val rawMsg = json.optString("msg", "")
                 val msg = ServerMessageLocalizer.localizeServerMessage(rawMsg, AppLocale.isEnglish(locContext()))
                 val tracked = inFlightSms.remove(cmdId)
-                repo().updateOutgoingMessageStatus(
-                    cmdId,
-                    if (ok) ChatLogic.STATUS_SENT else ChatLogic.STATUS_FAILED
-                )
-                val restored = if (!ok) tracked?.body else null
-                notifyUi { it.onCommandResult(cmdId, "SMS_SENT", ok, msg, restored) }
+                val targetStatus = when {
+                    ok -> ChatLogic.STATUS_SENT
+                    isUnknown -> ChatLogic.STATUS_UNKNOWN
+                    else -> ChatLogic.STATUS_FAILED
+                }
+                repo().updateOutgoingMessageStatus(cmdId, targetStatus)
+                val restored = if (!ok && !isUnknown) tracked?.body else null
+                notifyUi {
+                    it.onCommandResult(
+                        cmdId,
+                        if (isUnknown) "SMS_UNKNOWN" else "SMS_SENT",
+                        ok,
+                        msg,
+                        restored
+                    )
+                }
             }
 
             "CONTACTS_CHUNK" -> {
@@ -1461,10 +1601,13 @@ class BTRouterClientService : Service() {
         sendExecutor.execute {
             try {
                 ch.sendText(payload)
+                lastClientSentMs = System.currentTimeMillis()
             } catch (e: Exception) {
                 Log.w(TAG, "Ошибка отправки команды на Т2")
                 onWriteFailed?.invoke()
-                try { activeSocket?.close() } catch (_: Exception) {}
+                if (ch === activeChannel) {
+                    try { activeSocket?.close() } catch (_: Exception) {}
+                }
             }
         }
         return true
@@ -1484,7 +1627,7 @@ class BTRouterClientService : Service() {
                     batch.add(sms)
                 }
             }
-            persistPendingSmsQueueLocked()
+            persistPendingSmsQueueLocked(sync = true)
         }
 
         for (expiredId in expiredCmdIds) {
@@ -1500,6 +1643,7 @@ class BTRouterClientService : Service() {
 
         for (sms in batch) {
             inFlightSms[sms.cmdId] = sms
+            repo().updateOutgoingMessageStatus(sms.cmdId, ChatLogic.STATUS_SENDING)
             val sent = sendJson(JSONObject().apply {
                 put("t", "SEND_SMS")
                 put("id", sms.cmdId)
@@ -1508,10 +1652,9 @@ class BTRouterClientService : Service() {
             }) {
                 markInFlightSmsUnknown(sms.cmdId)
             }
-            if (sent) {
-                repo().updateOutgoingMessageStatus(sms.cmdId, ChatLogic.STATUS_SENDING)
-            } else {
+            if (!sent) {
                 inFlightSms.remove(sms.cmdId)
+                repo().updateOutgoingMessageStatus(sms.cmdId, ChatLogic.STATUS_QUEUED)
                 synchronized(queueLock) {
                     if (pendingSmsQueue.size < MAX_QUEUED_SMS) {
                         pendingSmsQueue.addLast(sms)
@@ -1689,6 +1832,14 @@ class BTRouterClientService : Service() {
         if (text.length > MAX_CLIENT_SMS_CHARS) {
             return SmsDispatchResult(false, str(R.string.error_sms_too_long, MAX_CLIENT_SMS_CHARS))
         }
+        val partsCount = try {
+            SmsMessage.calculateLength(text, false)[0]
+        } catch (_: Exception) {
+            1
+        }
+        if (partsCount > MAX_CLIENT_SMS_PARTS) {
+            return SmsDispatchResult(false, str(R.string.error_sms_too_many_parts, MAX_CLIENT_SMS_PARTS))
+        }
 
         val shortCodeHint = if (cleanNumber.length <= 5 && !cleanNumber.startsWith("+")) {
             str(R.string.sms_short_code_hint)
@@ -1865,6 +2016,11 @@ class BTRouterClientService : Service() {
                 MISSED_CHANNEL_ID, str(R.string.channel_missed_name), NotificationManager.IMPORTANCE_HIGH
             ).apply { description = str(R.string.channel_missed_desc) }
             nm.createNotificationChannel(missedChannel)
+
+            val alertChannel = NotificationChannel(
+                ALERT_CHANNEL_ID, str(R.string.channel_alert_name), NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = str(R.string.channel_alert_desc) }
+            nm.createNotificationChannel(alertChannel)
         }
     }
 
@@ -1889,10 +2045,10 @@ class BTRouterClientService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val restoreIntent = Intent(this, BTRouterClientService::class.java).apply {
-            action = ACTION_RESTORE_STATUS_NOTIFICATION
+        val restoreIntent = Intent(ACTION_RESTORE_STATUS_NOTIFICATION).apply {
+            setPackage(packageName)
         }
-        val deletePendingIntent = PendingIntent.getService(
+        val deletePendingIntent = PendingIntent.getBroadcast(
             this,
             3,
             restoreIntent,
@@ -2174,6 +2330,32 @@ class BTRouterClientService : Service() {
         postNotificationSafely(notifId, builder.build())
     }
 
+    private fun showToggleAlertNotification(warningMessage: String) {
+        if (!CompatUtils.hasPostNotificationsPermission(this)) return
+
+        val notifId = dynamicNotifIdGen.getAndIncrement()
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            notifId,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(str(R.string.notif_toggle_failed_title))
+            .setContentText(warningMessage)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(warningMessage))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        postNotificationSafely(notifId, builder.build())
+    }
+
     private val btStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
@@ -2185,11 +2367,21 @@ class BTRouterClientService : Service() {
                     }
                     BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
                         notifyDisconnected(ConnectionStatus.BtDisabled)
+                        try { connectingSocket?.close() } catch (_: Exception) {}
+                        connectingSocket = null
                         try { activeSocket?.close() } catch (_: Exception) {}
                         activeSocket = null
                         activeChannel = null
                     }
                 }
+            }
+        }
+    }
+
+    private val statusNotifDismissReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_RESTORE_STATUS_NOTIFICATION) {
+                scheduleStatusNotificationRestore()
             }
         }
     }
@@ -2228,6 +2420,8 @@ class BTRouterClientService : Service() {
             reconnectLock.notifyAll()
         }
 
+        try { connectingSocket?.close() } catch (_: Exception) {}
+        connectingSocket = null
         try { activeSocket?.close() } catch (_: Exception) {}
         activeSocket = null
         activeChannel = null
@@ -2238,6 +2432,7 @@ class BTRouterClientService : Service() {
         if (isInitialized) {
             try { unregisterReceiver(btStateReceiver) } catch (_: Exception) {}
             try { unregisterReceiver(screenStateReceiver) } catch (_: Exception) {}
+            try { unregisterReceiver(statusNotifDismissReceiver) } catch (_: Exception) {}
         }
 
         releasePulseWakeLock(force = true)

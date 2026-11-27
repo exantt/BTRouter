@@ -32,14 +32,17 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.provider.Telephony
 import android.telecom.TelecomManager
 import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -52,6 +55,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -74,12 +78,13 @@ class BTRouterServerService : Service() {
         private const val ACTION_SMS_SENT = "com.exantt.btrouterserver.ACTION_SMS_SENT"
         private const val EXTRA_SMS_CMD_ID = "cmd_id"
         private const val EXTRA_SMS_PART_INDEX = "part_index"
+        private const val EXTRA_SMS_SENT_TOKEN = "sent_token"
 
         private const val HOTSPOT_TRIGGER_ON_KEYWORD = "BTR_HOTSPOT_ON"
         private const val HOTSPOT_TRIGGER_OFF_KEYWORD = "BTR_HOTSPOT_OFF"
         private const val MOBILE_DATA_TRIGGER_ON_KEYWORD = "BTR_MOBILE_DATA_ON"
         private const val MOBILE_DATA_TRIGGER_OFF_KEYWORD = "BTR_MOBILE_DATA_OFF"
-        private const val ROUTINE_TRIGGER_CLEANUP_MS = 3_500L
+        private const val ROUTINE_TRIGGER_CLEANUP_MS = 8_000L
         private const val ACTION_WIFI_AP_STATE_CHANGED = "android.net.wifi.WIFI_AP_STATE_CHANGED"
         private const val EXTRA_WIFI_AP_STATE = "wifi_state"
         private const val WIFI_AP_STATE_DISABLED = 11
@@ -90,22 +95,29 @@ class BTRouterServerService : Service() {
         private const val STATUS_POLL_IDLE_MS = 30_000L
         private const val HOTSPOT_RECHECK_FIRST_MS = 1_500L
         private const val HOTSPOT_RECHECK_SECOND_MS = 3_500L
+        private const val HOTSPOT_RECHECK_THIRD_MS = 6_500L
+        private const val MOBILE_DATA_RECHECK_FIRST_MS = 1_500L
+        private const val MOBILE_DATA_RECHECK_SECOND_MS = 3_500L
+        private const val MOBILE_DATA_RECHECK_THIRD_MS = 6_500L
 
-        private const val PREFS_NAME = "bt_router_server_prefs"
+        const val PREFS_NAME = "bt_router_server_prefs"
         private const val KEY_SHARED_SECRET = "shared_secret"
         private const val KEY_ALLOWED_MAC = "allowed_client_mac"
         private const val KEY_ALLOWED_NAME = "allowed_client_name"
         private const val KEY_LAST_DISCONNECT_TIME = "last_disconnect_time"
+        private const val KEY_PENDING_AUTO_SYNC_FROM_MS = "pending_auto_sync_from_ms"
         private const val KEY_LAST_SYNCED_SMS_ID = "last_synced_sms_id"
         private const val KEY_LAST_SYNCED_CALL_ID = "last_synced_call_id"
         private const val KEY_UNACKED_LIVE_SMS = "unacked_live_sms"
+        private const val AUTO_SYNC_DELAY_MS = 1_500L
 
         private const val HANDSHAKE_TIMEOUT_SEC = 10L
         private const val CLIENT_IDLE_TIMEOUT_MS = 180_000L
         private const val MAX_SYNC_BATCH = 50
         private const val MAX_SMS_PARTS = 10
-        private const val SMS_MODEM_TIMEOUT_MS = 25_000L
+        private const val SMS_MODEM_TIMEOUT_MS = 45_000L
         private const val SMS_INTER_SEND_DELAY_MS = 1_200L
+        private val SMS_DB_FALLBACK_PROBE_DELAYS_MS = longArrayOf(6_000L, 14_000L, 26_000L, 40_000L)
         private const val MAX_UNACKED_LIVE_SMS = 30
         private const val UNACKED_TTL_MS = 24 * 60 * 60_000L
         private const val MAX_EXPORT_CONTACTS = 5000
@@ -167,12 +179,58 @@ class BTRouterServerService : Service() {
         val kind: String, // "LIVE_SMS", "SMS_SYNC", "CALL_SYNC"
         val dbId: Long,
         val eventTs: Long,
-        val payloadJson: String
+        val payloadJson: String,
+        val sender: String = "",
+        val body: String = ""
     )
 
+    private sealed class ServerState {
+        object Initializing : ServerState()
+        object ClientNotSelected : ServerState()
+        object WaitingClient : ServerState()
+        object ClientAllowedWaiting : ServerState()
+        object NoBtPermission : ServerState()
+        object BtDisabled : ServerState()
+        object WaitingAuthClient : ServerState()
+        object BtPermDenied : ServerState()
+        object AuthError : ServerState()
+        data class ConnectedEncrypted(val clientLabel: String) : ServerState()
+    }
+
     private val binder = LocalBinder()
+    private val callbacks = CopyOnWriteArraySet<ServiceCallback>()
     @Volatile
-    var callback: ServiceCallback? = null
+    private var localizedContext: Context? = null
+
+    fun addCallback(cb: ServiceCallback) {
+        callbacks.add(cb)
+    }
+
+    fun removeCallback(cb: ServiceCallback) {
+        callbacks.remove(cb)
+    }
+
+    private fun locContext(): Context =
+        localizedContext ?: AppLocale.wrap(this).also { localizedContext = it }
+
+    private fun str(@StringRes id: Int): String = locContext().getString(id)
+
+    private fun str(@StringRes id: Int, vararg args: Any): String = locContext().getString(id, *args)
+
+    private fun formatServerState(state: ServerState): String {
+        return when (state) {
+            ServerState.Initializing -> str(R.string.service_initializing)
+            ServerState.ClientNotSelected -> str(R.string.client_not_selected)
+            ServerState.WaitingClient -> str(R.string.service_waiting_client)
+            ServerState.ClientAllowedWaiting -> str(R.string.service_client_allowed_waiting)
+            ServerState.NoBtPermission -> str(R.string.service_no_bt_perm)
+            ServerState.BtDisabled -> str(R.string.service_bt_disabled)
+            ServerState.WaitingAuthClient -> str(R.string.service_waiting_auth_client)
+            ServerState.BtPermDenied -> str(R.string.service_bt_perm_denied)
+            ServerState.AuthError -> str(R.string.service_auth_error)
+            is ServerState.ConnectedEncrypted -> str(R.string.service_connected_encrypted, state.clientLabel)
+        }
+    }
 
     private lateinit var prefs: SharedPreferences
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -182,8 +240,10 @@ class BTRouterServerService : Service() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val sendExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val syncExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val smsExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private val watchdogExecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
+    private val initLock = Any()
     private val serverLoopLock = Object()
     private val statusSyncLock = Any()
     private val liveSmsLock = Any()
@@ -203,10 +263,12 @@ class BTRouterServerService : Service() {
     private var activeChannel: BtProtocol.SecureChannel? = null
 
     @Volatile
+    private var serverState: ServerState = ServerState.Initializing
+    @Volatile
     var isConnected: Boolean = false
         private set
     @Volatile
-    var currentStateText: String = "Инициализация сервера..."
+    var currentStateText: String = ""
         private set
     @Volatile
     var connectedClientLabel: String = ""
@@ -220,20 +282,12 @@ class BTRouterServerService : Service() {
     private var lastStatusSentAtMs: Long = 0L
     @Volatile
     private var lastClientActivityMs: Long = 0L
+    @Volatile
+    private var lastClientActivityElapsedMs: Long = 0L
+    @Volatile
+    private var idleProbeSentAtElapsedMs: Long = 0L
 
-    @Volatile
-    private var lastDisconnectTime: Long = 0L
-    @Volatile
-    private var lastSyncedSmsId: Long = 0L
-    @Volatile
-    private var lastSyncedCallId: Long = 0L
-    @Volatile
-    private var sessionConnectedAt: Long = 0L
-
-    private var pendingDisconnectCollecting = false
-    private val pendingDisconnectEventIds = HashSet<String>()
-    private var pendingDisconnectTargetTime = 0L
-    private var pendingDisconnectHadMore = false
+    private val disconnectSyncTracker = DisconnectSyncTracker()
 
     @Volatile
     private var isIncomingCallRinging: Boolean = false
@@ -252,11 +306,14 @@ class BTRouterServerService : Service() {
         val notifIdGen: AtomicInteger
     ) {
         val lock = Any()
-        var lastNotifId: Int = -1
+        val tracker = RoutineTriggerTracker()
         var cancelRunnable: Runnable? = null
+
+        fun isPendingLocked(): Boolean = synchronized(lock) { tracker.isPending() }
     }
 
-    private val smsRequestCodeGen = AtomicInteger(5000)
+    private val smsSentToken: String = java.util.UUID.randomUUID().toString()
+    private val smsRequestCodeGen = AtomicInteger(10_000 + java.security.SecureRandom().nextInt(1_000_000_000))
     private val hotspotTriggerState = RoutineTriggerState(AtomicInteger(2100))
     private val mobileDataTriggerState = RoutineTriggerState(AtomicInteger(3100))
     private val hotspotStateLock = Any()
@@ -268,7 +325,9 @@ class BTRouterServerService : Service() {
     private var mobileDataObserver: ContentObserver? = null
     private val outboundSmsQueue = OutboundSmsQueue()
     private var activeSmsTimeoutFuture: ScheduledFuture<*>? = null
+    private val activeSmsProbeFutures = ArrayList<ScheduledFuture<*>>()
     private var nextSmsDispatchFuture: ScheduledFuture<*>? = null
+    private val pendingSmsSentResults = LinkedHashMap<String, String>()
     private val liveDeliveredSms = ArrayDeque<LiveSmsRecord>(50)
     private val pendingEventAcks = ConcurrentHashMap<String, PendingServerEvent>()
     private val unackedLiveSms = LinkedHashMap<String, PendingServerEvent>()
@@ -277,139 +336,178 @@ class BTRouterServerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        localizedContext = AppLocale.wrap(this)
         createNotificationChannel()
+        ensureInitialized()
+    }
 
-        // Безопасный выход без ForegroundServiceDidNotStartInTimeException / SecurityException
-        if (!CompatUtils.hasBluetoothConnectPermission(this)) {
-            Log.w(TAG, "Нет разрешения BLUETOOTH_CONNECT — остановка службы")
-            try {
-                val fallbackNotif = buildNotification("Требуется разрешение Bluetooth")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(STATUS_NOTIFICATION_ID, fallbackNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-                } else {
-                    startForeground(STATUS_NOTIFICATION_ID, fallbackNotif)
+    private fun ensureInitialized(): Boolean {
+        synchronized(initLock) {
+            if (isInitialized) return true
+
+            localizedContext = AppLocale.wrap(this)
+            createNotificationChannel()
+
+            // Безопасный выход без ForegroundServiceDidNotStartInTimeException / SecurityException
+            if (!CompatUtils.hasBluetoothConnectPermission(this)) {
+                Log.w(TAG, "Нет разрешения BLUETOOTH_CONNECT — остановка службы")
+                try {
+                    val fallbackNotif = buildNotification(str(R.string.service_bt_perm_needed))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+                    } else {
+                        startForeground(STATUS_NOTIFICATION_ID, fallbackNotif)
+                    }
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } catch (_: Exception) {
                 }
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } catch (_: Exception) {
+                stopSelf()
+                return false
             }
-            stopSelf()
-            return
-        }
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        ensurePairingSecretExists()
-        lastDisconnectTime = prefs.getLong(KEY_LAST_DISCONNECT_TIME, 0L)
-        lastSyncedSmsId = prefs.getLong(KEY_LAST_SYNCED_SMS_ID, 0L)
-        lastSyncedCallId = prefs.getLong(KEY_LAST_SYNCED_CALL_ID, 0L)
-        loadUnackedLiveSms()
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BTRouterServer:ServiceWakeLock").apply {
-            setReferenceCounted(false)
-        }
-
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothAdapter = bluetoothManager.adapter
-
-        val initialText = if (getAllowedClientMac().isNullOrBlank()) {
-            "Client не выбран (подключения отклоняются)"
-        } else {
-            "Ожидание подключения Client..."
-        }
-        currentStateText = initialText
-        lastPostedNotifText = initialText
-        val initialNotif = buildNotification(initialText)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(STATUS_NOTIFICATION_ID, initialNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-        } else {
-            startForeground(STATUS_NOTIFICATION_ID, initialNotif)
-        }
-
-        ContextCompat.registerReceiver(
-            this,
-            callReceiver,
-            IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            smsReceiver,
-            IntentFilter("android.provider.Telephony.SMS_RECEIVED"),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            btStateReceiver,
-            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            smsSentReceiver,
-            IntentFilter(ACTION_SMS_SENT),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        val stickyApIntent = ContextCompat.registerReceiver(
-            this,
-            wifiApStateReceiver,
-            IntentFilter(ACTION_WIFI_AP_STATE_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        updateHotspotStateFromApInt(
-            stickyApIntent?.getIntExtra(EXTRA_WIFI_AP_STATE, -1) ?: -1,
-            pushStatus = false
-        )
-        val stickyTetherIntent = ContextCompat.registerReceiver(
-            this,
-            tetherStateReceiver,
-            IntentFilter(ACTION_TETHER_STATE_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        val stickyTetherList = try {
-            stickyTetherIntent?.getStringArrayListExtra(EXTRA_ACTIVE_TETHER)
-        } catch (_: Throwable) {
-            null
-        }
-        val stickyTetherHint = HotspotDetector.detectFromTetherArray(stickyTetherList)
-        if (stickyTetherHint == 0 || stickyTetherHint == 1) {
-            applyHotspotState(stickyTetherHint, pushStatus = false)
-        }
-        if (!syncExecutor.isShutdown) {
-            syncExecutor.execute {
-                if (isServerRunning) {
-                    refreshHotspotState(pushStatus = false, tetherHint = stickyTetherHint)
-                }
+            // Поднимаем foreground-уведомление немедленно ДО обращения к KeyStore/SharedPreferences
+            val bootState = ServerState.Initializing
+            serverState = bootState
+            val bootText = formatServerState(bootState)
+            currentStateText = bootText
+            lastPostedNotifText = bootText
+            val bootNotif = buildNotification(bootText)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(STATUS_NOTIFICATION_ID, bootNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            } else {
+                startForeground(STATUS_NOTIFICATION_ID, bootNotif)
             }
-        }
-        refreshMobileDataState(pushStatus = false)
-        try {
-            val observer = object : ContentObserver(mainHandler) {
-                override fun onChange(selfChange: Boolean) {
+
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            ensurePairingSecretExists()
+            synchronized(syncAckLock) {
+                disconnectSyncTracker.restore(
+                    lastDisconnectTime = prefs.getLong(KEY_LAST_DISCONNECT_TIME, 0L),
+                    pendingAutoSyncFromMs = prefs.getLong(KEY_PENDING_AUTO_SYNC_FROM_MS, 0L),
+                    lastSyncedSmsId = prefs.getLong(KEY_LAST_SYNCED_SMS_ID, 0L),
+                    lastSyncedCallId = prefs.getLong(KEY_LAST_SYNCED_CALL_ID, 0L)
+                )
+            }
+            loadUnackedLiveSms()
+
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BTRouterServer:ServiceWakeLock").apply {
+                setReferenceCounted(false)
+            }
+
+            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            bluetoothAdapter = bluetoothManager.adapter
+
+            val initialState = if (getAllowedClientMac().isNullOrBlank()) {
+                ServerState.ClientNotSelected
+            } else {
+                ServerState.WaitingClient
+            }
+            updateServerState(initialState, false, "")
+
+            ContextCompat.registerReceiver(
+                this,
+                callReceiver,
+                IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            ContextCompat.registerReceiver(
+                this,
+                smsReceiver,
+                IntentFilter("android.provider.Telephony.SMS_RECEIVED"),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            ContextCompat.registerReceiver(
+                this,
+                btStateReceiver,
+                IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            ContextCompat.registerReceiver(
+                this,
+                smsSentReceiver,
+                IntentFilter(ACTION_SMS_SENT),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            val stickyApIntent = ContextCompat.registerReceiver(
+                this,
+                wifiApStateReceiver,
+                IntentFilter(ACTION_WIFI_AP_STATE_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            updateHotspotStateFromApInt(
+                stickyApIntent?.getIntExtra(EXTRA_WIFI_AP_STATE, -1) ?: -1,
+                pushStatus = false
+            )
+            val stickyTetherIntent = ContextCompat.registerReceiver(
+                this,
+                tetherStateReceiver,
+                IntentFilter(ACTION_TETHER_STATE_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            val stickyTetherList = try {
+                stickyTetherIntent?.getStringArrayListExtra(EXTRA_ACTIVE_TETHER)
+            } catch (_: Throwable) {
+                null
+            }
+            val stickyTetherHint = HotspotDetector.detectFromTetherArray(stickyTetherList)
+            if (stickyTetherHint == 0 || stickyTetherHint == 1) {
+                applyHotspotState(stickyTetherHint, pushStatus = false)
+            }
+            if (!syncExecutor.isShutdown) {
+                syncExecutor.execute {
                     if (isServerRunning) {
-                        refreshMobileDataState(pushStatus = true)
+                        refreshHotspotState(pushStatus = false, tetherHint = stickyTetherHint)
                     }
                 }
             }
-            contentResolver.registerContentObserver(
-                Settings.Global.getUriFor("mobile_data"),
-                false,
-                observer
-            )
-            mobileDataObserver = observer
-        } catch (_: Exception) {
-        }
+            refreshMobileDataState(pushStatus = false)
+            try {
+                val observer = object : ContentObserver(mainHandler) {
+                    override fun onChange(selfChange: Boolean) {
+                        if (isServerRunning) {
+                            refreshMobileDataState(pushStatus = true)
+                        }
+                    }
+                }
+                contentResolver.registerContentObserver(
+                    Settings.Global.getUriFor("mobile_data"),
+                    false,
+                    observer
+                )
+                mobileDataObserver = observer
+            } catch (_: Exception) {
+            }
 
-        isInitialized = true
-        thread(name = "BTServerLoop") { startBluetoothServer() }
+            isInitialized = true
+            thread(name = "BTServerLoop") { startBluetoothServer() }
+            return true
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!isInitialized) {
+        if (!ensureInitialized()) {
             stopSelf()
             return START_NOT_STICKY
         }
         return START_STICKY
+    }
+
+    fun onLanguageChanged() {
+        localizedContext = AppLocale.wrap(this)
+        createNotificationChannel()
+        val text = formatServerState(serverState)
+        currentStateText = text
+        updateNotification(text, force = true)
+        if (callbacks.isNotEmpty()) {
+            mainHandler.post {
+                for (cb in callbacks) {
+                    cb.onServiceStateChanged(text, isConnected, connectedClientLabel)
+                }
+            }
+        }
     }
 
     fun getPairingSecret(): String = getOrCreatePairingSecret(this)
@@ -431,12 +529,12 @@ class BTRouterServerService : Service() {
 
     fun onConfigUpdated() {
         closeActiveClientSession()
-        val msg = if (getAllowedClientMac().isNullOrBlank()) {
-            "Client не выбран (подключения отклоняются)"
+        val state = if (getAllowedClientMac().isNullOrBlank()) {
+            ServerState.ClientNotSelected
         } else {
-            "Разрешён Client — ожидание подключения..."
+            ServerState.ClientAllowedWaiting
         }
-        updateState(msg, false, "")
+        updateServerState(state, false, "")
         wakeServerLoop()
     }
 
@@ -488,15 +586,33 @@ class BTRouterServerService : Service() {
                         dirty = true
                         continue
                     }
+                    var parsedSender = ""
+                    var parsedBody = ""
+                    try {
+                        val payloadObj = JSONObject(payload)
+                        parsedSender = payloadObj.optString("number", "")
+                        parsedBody = payloadObj.optString("body", "")
+                    } catch (_: Exception) {
+                    }
                     val ev = PendingServerEvent(
                         eventId = eventId,
                         kind = "LIVE_SMS",
                         dbId = 0L,
                         eventTs = eventTs,
-                        payloadJson = payload
+                        payloadJson = payload,
+                        sender = parsedSender,
+                        body = parsedBody
                     )
                     unackedLiveSms[eventId] = ev
                     pendingEventAcks[eventId] = ev
+                    if (parsedSender.isNotEmpty()) {
+                        synchronized(liveSmsLock) {
+                            if (liveDeliveredSms.size >= 50) {
+                                liveDeliveredSms.removeFirst()
+                            }
+                            liveDeliveredSms.addLast(LiveSmsRecord(eventId, parsedSender, parsedBody, eventTs))
+                        }
+                    }
                 }
             } catch (_: Exception) {
                 unackedLiveSms.clear()
@@ -618,25 +734,46 @@ class BTRouterServerService : Service() {
         activeServerSocket = null
     }
 
+    private fun persistDisconnectWindowLocked() {
+        if (!this::prefs.isInitialized) return
+        prefs.edit()
+            .putLong(KEY_LAST_DISCONNECT_TIME, disconnectSyncTracker.lastDisconnectTime)
+            .putLong(KEY_PENDING_AUTO_SYNC_FROM_MS, disconnectSyncTracker.pendingAutoSyncFromMs)
+            .apply()
+    }
+
     private fun recordDisconnectTime() {
         val now = System.currentTimeMillis()
-        lastDisconnectTime = now
-        if (this::prefs.isInitialized) {
-            prefs.edit().putLong(KEY_LAST_DISCONNECT_TIME, now).apply()
+        synchronized(syncAckLock) {
+            if (disconnectSyncTracker.recordDisconnect(now, lastClientActivityMs)) {
+                persistDisconnectWindowLocked()
+            }
+        }
+    }
+
+    private fun flushPendingSmsSentResults(targetChannel: BtProtocol.SecureChannel) {
+        val pendingPayloads: List<String>
+        synchronized(smsTrackerLock) {
+            if (pendingSmsSentResults.isEmpty()) return
+            pendingPayloads = pendingSmsSentResults.values.toList()
+            pendingSmsSentResults.clear()
+        }
+        for (payload in pendingPayloads) {
+            sendRawPayload(payload, targetChannel)
         }
     }
 
     private fun startBluetoothServer() {
         while (isServerRunning) {
             if (!CompatUtils.hasBluetoothConnectPermission(this)) {
-                updateState("Нет разрешения BLUETOOTH_CONNECT", false, "")
+                updateServerState(ServerState.NoBtPermission, false, "")
                 waitInServerLoop(5_000L)
                 continue
             }
 
             val adapter = bluetoothAdapter
             if (adapter == null || !adapter.isEnabled) {
-                updateState("Bluetooth на Server выключен", false, "")
+                updateServerState(ServerState.BtDisabled, false, "")
                 waitInServerLoop(5 * 60_000L)
                 continue
             }
@@ -647,19 +784,19 @@ class BTRouterServerService : Service() {
                 serverSocket = try {
                     adapter.listenUsingRfcommWithServiceRecord(APP_NAME, BtProtocol.APP_UUID)
                 } catch (secEx: SecurityException) {
-                    updateState("Отказано в праве Bluetooth", false, "")
+                    updateServerState(ServerState.BtPermDenied, false, "")
                     waitInServerLoop(5_000L)
                     continue
                 }
                 activeServerSocket = serverSocket
 
                 while (isServerRunning && bluetoothAdapter?.isEnabled == true) {
-                    val waitMessage = if (getAllowedClientMac().isNullOrBlank()) {
-                        "Client не выбран (подключения отклоняются)"
+                    val waitState = if (getAllowedClientMac().isNullOrBlank()) {
+                        ServerState.ClientNotSelected
                     } else {
-                        "Ожидание авторизованного Client..."
+                        ServerState.WaitingAuthClient
                     }
-                    updateState(waitMessage, false, "")
+                    updateServerState(waitState, false, "")
 
                     val socket = serverSocket?.accept() ?: break
                     acquirePulseWakeLock(12_000L)
@@ -699,7 +836,7 @@ class BTRouterServerService : Service() {
                         handshakeWatchdog.cancel(false)
                         Log.w(TAG, "Ошибка авторизации клиента")
                         try { socket.close() } catch (_: Exception) {}
-                        updateState("Ошибка авторизации Client (проверьте ключ)", false, "")
+                        updateServerState(ServerState.AuthError, false, "")
                         waitInServerLoop(1_500L)
                         continue
                     } finally {
@@ -708,30 +845,69 @@ class BTRouterServerService : Service() {
 
                     activeSocket = socket
                     activeChannel = channel
-                    sessionConnectedAt = System.currentTimeMillis()
-                    lastClientActivityMs = sessionConnectedAt
+                    lastClientActivityMs = System.currentTimeMillis()
+                    lastClientActivityElapsedMs = SystemClock.elapsedRealtime()
+                    idleProbeSentAtElapsedMs = 0L
 
                     val clientLabel = getAllowedClientName()?.ifBlank { null } ?: "Client"
-                    updateState("Подключено и зашифровано: $clientLabel", true, clientLabel)
+                    updateServerState(ServerState.ConnectedEncrypted(clientLabel), true, clientLabel)
 
                     synchronized(statusSyncLock) {
                         lastSentStatusJson = ""
                     }
                     sendStatusIfChanged(force = true, targetChannel = channel)
                     flushUnackedLiveSms(channel)
+                    flushPendingSmsSentResults(channel)
                     startStatusReporter(socket, channel)
 
-                    val idleWatchdog = watchdogExecutor.scheduleAtFixedRate({
-                        if (activeSocket === socket && System.currentTimeMillis() - lastClientActivityMs > CLIENT_IDLE_TIMEOUT_MS) {
-                            Log.w(TAG, "Таймаут активности Т1 (>3 мин) — закрываю сокет")
-                            try { socket.close() } catch (_: Exception) {}
+                    val hasPendingAutoSync = synchronized(syncAckLock) {
+                        disconnectSyncTracker.autoSyncFetchFromTime() != null
+                    }
+                    if (hasPendingAutoSync && isServerRunning && !watchdogExecutor.isShutdown) {
+                        acquirePulseWakeLock(10_000L)
+                        watchdogExecutor.schedule({
+                            if (isServerRunning && activeChannel === channel && !syncExecutor.isShutdown) {
+                                syncExecutor.execute {
+                                    if (isServerRunning && activeChannel === channel) {
+                                        syncAllSinceDisconnect(
+                                            cmdId = "",
+                                            autoSync = true,
+                                            targetChannel = channel
+                                        )
+                                    }
+                                }
+                            }
+                        }, AUTO_SYNC_DELAY_MS, TimeUnit.MILLISECONDS)
+                    }
+
+                    val idleWatchdog = watchdogExecutor.scheduleWithFixedDelay({
+                        if (activeSocket !== socket || !isServerRunning) return@scheduleWithFixedDelay
+                        val elapsed = SystemClock.elapsedRealtime()
+                        if (elapsed - lastClientActivityElapsedMs > CLIENT_IDLE_TIMEOUT_MS) {
+                            val probeAt = idleProbeSentAtElapsedMs
+                            if (probeAt == 0L) {
+                                idleProbeSentAtElapsedMs = elapsed
+                                acquirePulseWakeLock(3_000L)
+                                sendJson(
+                                    JSONObject().apply {
+                                        put("t", "PING")
+                                        put("ts", System.currentTimeMillis())
+                                    },
+                                    channel
+                                )
+                            } else if (elapsed - probeAt >= 15_000L) {
+                                Log.w(TAG, "Таймаут активности Т1 (>3 мин, нет ответа на PING) — закрываю сокет")
+                                try { socket.close() } catch (_: Exception) {}
+                            }
                         }
-                    }, 60, 60, TimeUnit.SECONDS)
+                    }, 30, 30, TimeUnit.SECONDS)
 
                     try {
                         while (isServerRunning && activeSocket === socket) {
                             val frameText = channel.receiveText()
                             lastClientActivityMs = System.currentTimeMillis()
+                            lastClientActivityElapsedMs = SystemClock.elapsedRealtime()
+                            idleProbeSentAtElapsedMs = 0L
                             acquirePulseWakeLock(4_000L)
                             val json = JSONObject(frameText)
                             handleClientCommand(json)
@@ -753,7 +929,7 @@ class BTRouterServerService : Service() {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Сбой серверного сокета (перезапуск)")
-                if (isServerRunning) {
+                if (isServerRunning && isConnected) {
                     recordDisconnectTime()
                 }
             } finally {
@@ -772,6 +948,8 @@ class BTRouterServerService : Service() {
         val cmdId = json.optString("id", "")
 
         when (type) {
+            "PONG" -> Unit
+
             "PING" -> {
                 sendJson(JSONObject().apply {
                     put("t", "PONG")
@@ -860,9 +1038,13 @@ class BTRouterServerService : Service() {
                         return
                     }
 
-                    val item = OutboundSmsQueue.OutboundSmsItem(cmdId, number, ArrayList(parts))
+                    val item = OutboundSmsQueue.OutboundSmsItem(cmdId, number, ArrayList(parts), body)
                     val enqueueResult = synchronized(smsTrackerLock) {
                         outboundSmsQueue.enqueue(item)
+                    }
+                    if (enqueueResult.duplicate) {
+                        sendAck(cmdId, "SEND_SMS", true, "Передано в модем Server")
+                        return
                     }
                     if (!enqueueResult.accepted) {
                         sendAck(cmdId, "SEND_SMS", false, "Очередь отправки СМС на Server переполнена")
@@ -870,8 +1052,8 @@ class BTRouterServerService : Service() {
                     }
 
                     sendAck(cmdId, "SEND_SMS", true, "Передано в модем Server")
-                    if (enqueueResult.dispatchImmediately) {
-                        syncExecutor.execute { dispatchOutboundSms(item) }
+                    if (enqueueResult.dispatchImmediately && !smsExecutor.isShutdown) {
+                        smsExecutor.execute { dispatchOutboundSms(item) }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Ошибка подготовки СМС на сервере")
@@ -918,21 +1100,15 @@ class BTRouterServerService : Service() {
                 }
                 "SMS_SYNC" -> {
                     synchronized(syncAckLock) {
-                        if (event.dbId > lastSyncedSmsId) {
-                            lastSyncedSmsId = event.dbId
-                            if (this::prefs.isInitialized) {
-                                prefs.edit().putLong(KEY_LAST_SYNCED_SMS_ID, lastSyncedSmsId).apply()
-                            }
+                        if (disconnectSyncTracker.advanceSyncedSmsId(event.dbId) && this::prefs.isInitialized) {
+                            prefs.edit().putLong(KEY_LAST_SYNCED_SMS_ID, disconnectSyncTracker.lastSyncedSmsId).apply()
                         }
                     }
                 }
                 "CALL_SYNC" -> {
                     synchronized(syncAckLock) {
-                        if (event.dbId > lastSyncedCallId) {
-                            lastSyncedCallId = event.dbId
-                            if (this::prefs.isInitialized) {
-                                prefs.edit().putLong(KEY_LAST_SYNCED_CALL_ID, lastSyncedCallId).apply()
-                            }
+                        if (disconnectSyncTracker.advanceSyncedCallId(event.dbId) && this::prefs.isInitialized) {
+                            prefs.edit().putLong(KEY_LAST_SYNCED_CALL_ID, disconnectSyncTracker.lastSyncedCallId).apply()
                         }
                     }
                 }
@@ -947,14 +1123,8 @@ class BTRouterServerService : Service() {
         }
 
         synchronized(syncAckLock) {
-            if (pendingDisconnectEventIds.remove(eventId)) {
-                if (!pendingDisconnectCollecting && pendingDisconnectEventIds.isEmpty() && !pendingDisconnectHadMore && pendingDisconnectTargetTime > 0L) {
-                    lastDisconnectTime = pendingDisconnectTargetTime
-                    if (this::prefs.isInitialized) {
-                        prefs.edit().putLong(KEY_LAST_DISCONNECT_TIME, lastDisconnectTime).apply()
-                    }
-                    pendingDisconnectTargetTime = 0L
-                }
+            if (disconnectSyncTracker.onEventAck(eventId)) {
+                persistDisconnectWindowLocked()
             }
         }
     }
@@ -971,6 +1141,34 @@ class BTRouterServerService : Service() {
         sendJson(ack)
     }
 
+    private fun cancelActiveSmsTimersLocked() {
+        activeSmsTimeoutFuture?.cancel(false)
+        activeSmsTimeoutFuture = null
+        for (probe in activeSmsProbeFutures) {
+            probe.cancel(false)
+        }
+        activeSmsProbeFutures.clear()
+    }
+
+    private fun queryMaxSmsId(): Long {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            return -1L
+        }
+        return try {
+            contentResolver.query(
+                Telephony.Sms.CONTENT_URI,
+                arrayOf("_id"),
+                null,
+                null,
+                "_id DESC"
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getLong(0) else 0L
+            } ?: -1L
+        } catch (_: Exception) {
+            -1L
+        }
+    }
+
     private fun dispatchOutboundSms(item: OutboundSmsQueue.OutboundSmsItem) {
         acquirePulseWakeLock(SMS_MODEM_TIMEOUT_MS + 2_000L)
         val smsManager = CompatUtils.getSmsManager(this)
@@ -979,29 +1177,49 @@ class BTRouterServerService : Service() {
             return
         }
 
+        val baselineSmsId = queryMaxSmsId()
+
         val sentIntents = ArrayList<PendingIntent>(item.parts.size)
         for (i in item.parts.indices) {
             val sentIntent = Intent(ACTION_SMS_SENT).apply {
                 setPackage(packageName)
+                identifier = "${item.cmdId}:$i"
                 putExtra(EXTRA_SMS_CMD_ID, item.cmdId)
                 putExtra(EXTRA_SMS_PART_INDEX, i)
+                putExtra(EXTRA_SMS_SENT_TOKEN, smsSentToken)
             }
             val pi = PendingIntent.getBroadcast(
                 this,
                 smsRequestCodeGen.getAndIncrement(),
                 sentIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_CANCEL_CURRENT
             )
             sentIntents.add(pi)
         }
 
         synchronized(smsTrackerLock) {
-            activeSmsTimeoutFuture?.cancel(false)
-            activeSmsTimeoutFuture = watchdogExecutor.schedule(
-                { failActiveOutboundSms(item.cmdId, OutboundSmsQueue.MSG_MODEM_TIMEOUT) },
-                SMS_MODEM_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS
-            )
+            cancelActiveSmsTimersLocked()
+            if (isServerRunning && !watchdogExecutor.isShutdown) {
+                activeSmsTimeoutFuture = watchdogExecutor.schedule(
+                    { timeoutActiveOutboundSms(item.cmdId) },
+                    SMS_MODEM_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                )
+                if (baselineSmsId >= 0L) {
+                    for (delayMs in SMS_DB_FALLBACK_PROBE_DELAYS_MS) {
+                        val probeFuture = watchdogExecutor.schedule(
+                            {
+                                if (isServerRunning && !smsExecutor.isShutdown) {
+                                    smsExecutor.execute { checkSentSmsDbFallback(item, baselineSmsId) }
+                                }
+                            },
+                            delayMs,
+                            TimeUnit.MILLISECONDS
+                        )
+                        activeSmsProbeFutures.add(probeFuture)
+                    }
+                }
+            }
         }
 
         try {
@@ -1016,23 +1234,112 @@ class BTRouterServerService : Service() {
         }
     }
 
+    private fun checkSentSmsDbFallback(item: OutboundSmsQueue.OutboundSmsItem, baselineSmsId: Long) {
+        val isStillActive = synchronized(smsTrackerLock) {
+            outboundSmsQueue.activeCmdId() == item.cmdId
+        }
+        if (!isStillActive) return
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        var matchedType = -1
+        try {
+            contentResolver.query(
+                Telephony.Sms.CONTENT_URI,
+                arrayOf("_id", "address", "body", "type"),
+                "_id > ? AND type IN (?, ?)",
+                arrayOf(
+                    baselineSmsId.toString(),
+                    Telephony.Sms.MESSAGE_TYPE_SENT.toString(),
+                    Telephony.Sms.MESSAGE_TYPE_FAILED.toString()
+                ),
+                "_id ASC"
+            )?.use { cursor ->
+                val addrIdx = cursor.getColumnIndex("address")
+                val bodyIdx = cursor.getColumnIndex("body")
+                val typeIdx = cursor.getColumnIndex("type")
+                while (cursor.moveToNext()) {
+                    val rowAddr = if (addrIdx >= 0) cursor.getString(addrIdx).orEmpty() else ""
+                    val rowBody = if (bodyIdx >= 0) cursor.getString(bodyIdx).orEmpty() else ""
+                    val rowType = if (typeIdx >= 0) cursor.getInt(typeIdx) else -1
+                    if (OutboundSmsQueue.phoneNumbersMatch(rowAddr, item.number) && rowBody == item.fullBody) {
+                        matchedType = rowType
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Ошибка резервной проверки отправки СМС в БД", e)
+            return
+        }
+
+        if (matchedType == -1) return
+
+        val ok = (matchedType == Telephony.Sms.MESSAGE_TYPE_SENT)
+        val completion = synchronized(smsTrackerLock) {
+            val res = outboundSmsQueue.onActiveDbFallbackResult(
+                item.cmdId,
+                ok,
+                if (ok) null else "Сбой отправки оператором"
+            )
+            if (res != null) {
+                cancelActiveSmsTimersLocked()
+            }
+            res
+        } ?: return
+
+        handleSmsCompleted(completion)
+    }
+
+    private fun timeoutActiveOutboundSms(cmdId: String) {
+        val completion = synchronized(smsTrackerLock) {
+            val res = outboundSmsQueue.onActiveTimeout(cmdId)
+            if (res != null) {
+                cancelActiveSmsTimersLocked()
+            }
+            res
+        } ?: return
+        handleSmsCompleted(completion)
+    }
+
     private fun failActiveOutboundSms(cmdId: String, reason: String) {
         val completion = synchronized(smsTrackerLock) {
-            activeSmsTimeoutFuture?.cancel(false)
-            activeSmsTimeoutFuture = null
-            outboundSmsQueue.onActiveFailure(cmdId, reason)
+            val res = outboundSmsQueue.onActiveFailure(cmdId, reason)
+            if (res != null) {
+                cancelActiveSmsTimersLocked()
+            }
+            res
         } ?: return
         handleSmsCompleted(completion)
     }
 
     private fun handleSmsCompleted(res: OutboundSmsQueue.CompletionResult) {
-        sendJson(JSONObject().apply {
+        val statusStr = when {
+            res.ok -> "sent"
+            res.timedOut -> "unknown"
+            else -> "failed"
+        }
+        val payloadJson = JSONObject().apply {
             put("t", "SMS_SENT")
             put("id", res.cmdId)
             put("ok", res.ok)
+            put("status", statusStr)
             put("msg", res.message)
-        })
-        if (res.hasMoreQueued && isServerRunning) {
+        }.toString()
+        val ch = activeChannel
+        if (isConnected && ch != null) {
+            sendRawPayload(payloadJson, ch)
+        } else {
+            synchronized(smsTrackerLock) {
+                while (pendingSmsSentResults.size >= 30) {
+                    val oldest = pendingSmsSentResults.keys.firstOrNull() ?: break
+                    pendingSmsSentResults.remove(oldest)
+                }
+                pendingSmsSentResults[res.cmdId] = payloadJson
+            }
+        }
+        if (res.hasMoreQueued && isServerRunning && !watchdogExecutor.isShutdown) {
             acquirePulseWakeLock(SMS_INTER_SEND_DELAY_MS + 3_000L)
             synchronized(smsTrackerLock) {
                 nextSmsDispatchFuture?.cancel(false)
@@ -1050,8 +1357,8 @@ class BTRouterServerService : Service() {
             nextSmsDispatchFuture = null
             outboundSmsQueue.onCooldownFinished()
         } ?: return
-        if (isServerRunning && !syncExecutor.isShutdown) {
-            syncExecutor.execute { dispatchOutboundSms(next) }
+        if (isServerRunning && !smsExecutor.isShutdown) {
+            smsExecutor.execute { dispatchOutboundSms(next) }
         }
     }
 
@@ -1106,9 +1413,34 @@ class BTRouterServerService : Service() {
         }
     }
 
+    private fun getActiveDataTelephonyManager(baseTm: TelephonyManager): TelephonyManager {
+        val subId = try {
+            val activeSubId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                SubscriptionManager.getActiveDataSubscriptionId()
+            } else {
+                SubscriptionManager.INVALID_SUBSCRIPTION_ID
+            }
+            if (activeSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                activeSubId
+            } else {
+                SubscriptionManager.getDefaultDataSubscriptionId()
+            }
+        } catch (_: Throwable) {
+            SubscriptionManager.INVALID_SUBSCRIPTION_ID
+        }
+        if (subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+            try {
+                return baseTm.createForSubscriptionId(subId)
+            } catch (_: Throwable) {
+            }
+        }
+        return baseTm
+    }
+
     private fun buildStatusJson(): JSONObject {
         val (batteryPct, isCharging) = getBatteryInfo()
         val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        val dataTm = getActiveDataTelephonyManager(tm)
         var operator = tm.networkOperatorName
         if (operator.isNullOrEmpty()) {
             operator = tm.simOperatorName
@@ -1124,7 +1456,7 @@ class BTRouterServerService : Service() {
             0
         }
 
-        val dataStatus = getMobileDataStatus(tm).trim()
+        val dataStatus = getMobileDataStatus(dataTm).trim()
 
         val ringing = isIncomingCallRinging && isTelephonyRinging()
         if (!ringing && isIncomingCallRinging) {
@@ -1138,6 +1470,7 @@ class BTRouterServerService : Service() {
             synchronized(hotspotStateLock) {
                 hotspotState = currentHotspot
             }
+            dismissRoutineTriggerIfMatched(hotspotTriggerState, currentHotspot)
         }
 
         val currentMobileData = readMobileDataState()
@@ -1145,6 +1478,7 @@ class BTRouterServerService : Service() {
             synchronized(mobileDataStateLock) {
                 mobileDataState = currentMobileData
             }
+            dismissRoutineTriggerIfMatched(mobileDataTriggerState, currentMobileData)
         }
 
         return JSONObject().apply {
@@ -1314,6 +1648,9 @@ class BTRouterServerService : Service() {
                     val senderNumber = (if (addrIdx >= 0) cursor.getString(addrIdx) else null) ?: "Неизвестный"
                     val messageBody = (if (bodyIdx >= 0) cursor.getString(bodyIdx) else null) ?: ""
                     val date = if (dateIdx >= 0) cursor.getLong(dateIdx) else System.currentTimeMillis()
+                    if (wasDeliveredOrQueuedLive(senderNumber, messageBody, date)) {
+                        continue
+                    }
                     val name = getContactName(senderNumber)
 
                     val json = JSONObject().apply {
@@ -1336,20 +1673,33 @@ class BTRouterServerService : Service() {
         }
     }
 
-    private fun wasConfirmedLiveRecently(sender: String, body: String, dbDateMs: Long): Boolean {
-        val matchingEventIds = mutableListOf<String>()
+    private fun wasDeliveredOrQueuedLive(sender: String, body: String, dbDateMs: Long): Boolean {
         synchronized(liveSmsLock) {
             for (rec in liveDeliveredSms) {
-                if (rec.sender == sender && rec.body == body && kotlin.math.abs(rec.receivedAtMs - dbDateMs) < 90_000L) {
-                    matchingEventIds.add(rec.eventId)
+                if (DisconnectSyncTracker.shouldDeduplicateLiveSms(
+                        dbSender = sender,
+                        dbBody = body,
+                        dbDateMs = dbDateMs,
+                        liveSender = rec.sender,
+                        liveBody = rec.body,
+                        liveTsMs = rec.receivedAtMs
+                    )
+                ) {
+                    return true
                 }
             }
         }
-        if (matchingEventIds.isEmpty()) return false
         synchronized(unackedQueueLock) {
-            // Считаем доставленным только то живое SMS, для которого уже пришёл EVENT_ACK (не осталось в очереди unackedLiveSms)
-            for (evId in matchingEventIds) {
-                if (!unackedLiveSms.containsKey(evId)) {
+            for (ev in unackedLiveSms.values) {
+                if (DisconnectSyncTracker.shouldDeduplicateLiveSms(
+                        dbSender = sender,
+                        dbBody = body,
+                        dbDateMs = dbDateMs,
+                        liveSender = ev.sender,
+                        liveBody = ev.body,
+                        liveTsMs = ev.eventTs
+                    )
+                ) {
                     return true
                 }
             }
@@ -1386,7 +1736,7 @@ class BTRouterServerService : Service() {
                     val messageBody = (if (bodyIdx >= 0) cursor.getString(bodyIdx) else null) ?: ""
                     val date = if (dateIdx >= 0) cursor.getLong(dateIdx) else System.currentTimeMillis()
 
-                    if (date >= sessionConnectedAt - 5_000L && wasConfirmedLiveRecently(senderNumber, messageBody, date)) {
+                    if (wasDeliveredOrQueuedLive(senderNumber, messageBody, date)) {
                         continue
                     }
 
@@ -1480,20 +1830,26 @@ class BTRouterServerService : Service() {
         return Pair(events, hasMore)
     }
 
-    private fun syncAllSinceDisconnect(cmdId: String) {
+    private fun syncAllSinceDisconnect(
+        cmdId: String,
+        autoSync: Boolean = false,
+        targetChannel: BtProtocol.SecureChannel? = activeChannel
+    ) {
+        val ch = targetChannel ?: return
         val windowEndMs = System.currentTimeMillis()
         val fetchFromTime: Long
         val minSmsId: Long
         val minCallId: Long
 
         synchronized(syncAckLock) {
-            fetchFromTime = if (lastDisconnectTime > 0L) lastDisconnectTime else (windowEndMs - 30 * 60 * 1000L)
-            minSmsId = lastSyncedSmsId
-            minCallId = lastSyncedCallId
-            pendingDisconnectCollecting = true
-            pendingDisconnectEventIds.clear()
-            pendingDisconnectTargetTime = windowEndMs
-            pendingDisconnectHadMore = false
+            fetchFromTime = if (autoSync) {
+                disconnectSyncTracker.autoSyncFetchFromTime() ?: return
+            } else {
+                disconnectSyncTracker.manualSyncFetchFromTime(windowEndMs)
+            }
+            minSmsId = disconnectSyncTracker.lastSyncedSmsId
+            minCallId = disconnectSyncTracker.lastSyncedCallId
+            disconnectSyncTracker.beginCollection(windowEndMs)
         }
 
         val (smsEvents, smsHasMore) = syncSmsSinceDisconnectInternal(fetchFromTime, minSmsId)
@@ -1504,33 +1860,34 @@ class BTRouterServerService : Service() {
         synchronized(syncAckLock) {
             for (ev in allEvents) {
                 pendingEventAcks[ev.eventId] = ev
-                pendingDisconnectEventIds.add(ev.eventId)
             }
-            pendingDisconnectHadMore = hasMore
-            pendingDisconnectCollecting = false
-
-            if (allEvents.isEmpty() && !hasMore) {
-                lastDisconnectTime = windowEndMs
-                if (this::prefs.isInitialized) {
-                    prefs.edit().putLong(KEY_LAST_DISCONNECT_TIME, windowEndMs).apply()
-                }
-                pendingDisconnectTargetTime = 0L
+            if (disconnectSyncTracker.finishCollection(allEvents.map { it.eventId }, hasMore)) {
+                persistDisconnectWindowLocked()
             }
         }
 
         for (ev in allEvents) {
-            sendRawPayload(ev.payloadJson)
+            sendRawPayload(ev.payloadJson, ch)
         }
-        sendSyncResult(cmdId, allEvents.size, hasMore)
+        if (!autoSync || allEvents.isNotEmpty()) {
+            sendSyncResult(cmdId, allEvents.size, hasMore, autoSync = autoSync, targetChannel = ch)
+        }
     }
 
-    private fun sendSyncResult(cmdId: String, count: Int, hasMore: Boolean) {
+    private fun sendSyncResult(
+        cmdId: String,
+        count: Int,
+        hasMore: Boolean,
+        autoSync: Boolean = false,
+        targetChannel: BtProtocol.SecureChannel? = activeChannel
+    ) {
         val result = if (count > 0) {
             JSONObject().apply {
                 put("t", "SYNC_DONE")
                 put("id", cmdId)
                 put("count", count)
                 put("hasMore", hasMore)
+                put("auto", autoSync)
             }
         } else {
             JSONObject().apply {
@@ -1538,7 +1895,7 @@ class BTRouterServerService : Service() {
                 put("id", cmdId)
             }
         }
-        sendJson(result)
+        sendJson(result, targetChannel)
     }
 
     private data class ExportContact(
@@ -1550,10 +1907,19 @@ class BTRouterServerService : Service() {
         val lastUpdatedMs: Long
     )
 
+    private val exportExtRegex = Regex("[,;]|(?:^|\\s)(?:доб\\.?|вн\\.?|ext\\.?|x)\\s*\\d", RegexOption.IGNORE_CASE)
+
+    private fun stripExportPhoneExtension(raw: String): String? {
+        if ('*' in raw || '#' in raw) return null
+        val match = exportExtRegex.find(raw) ?: return raw
+        return raw.substring(0, match.range.first)
+    }
+
     private fun cleanExportPhone(raw: String): String {
-        val sb = StringBuilder(raw.length)
+        val base = stripExportPhoneExtension(raw) ?: return ""
+        val sb = StringBuilder(base.length)
         var prevSpace = false
-        for (ch in raw) {
+        for (ch in base) {
             if (Character.getType(ch) == Character.FORMAT.toInt()) continue
             when {
                 ch == '\u00A0' || ch.isWhitespace() -> {
@@ -1576,8 +1942,9 @@ class BTRouterServerService : Service() {
     }
 
     private fun canonicalContactPhone(raw: String): String {
+        val base = stripExportPhoneExtension(raw) ?: return ""
         val sb = StringBuilder(16)
-        for (ch in raw) {
+        for (ch in base) {
             if (Character.getType(ch) == Character.FORMAT.toInt() || ch.isWhitespace()) continue
             if (sb.isEmpty() && ch == '+') {
                 sb.append('+')
@@ -1680,7 +2047,11 @@ class BTRouterServerService : Service() {
             val intlIdx = intlMatches[0]
             if (removed[intlIdx]) continue
             val intl = pass1[intlIdx]
-            pass1[intlIdx] = if (isBetterExportContact(local, intl)) local else intl
+            pass1[intlIdx] = if (isBetterExportContact(local, intl)) {
+                local.copy(phone = intl.phone, canonical = intl.canonical)
+            } else {
+                intl
+            }
             removed[i] = true
         }
 
@@ -1826,14 +2197,18 @@ class BTRouterServerService : Service() {
         }
     }
 
-    private fun updateState(stateText: String, connected: Boolean, clientName: String) {
+    private fun updateServerState(state: ServerState, connected: Boolean, clientName: String) {
+        serverState = state
+        val stateText = formatServerState(state)
         isConnected = connected
         currentStateText = stateText
         connectedClientLabel = clientName
         updateNotification(stateText)
-        if (callback != null) {
+        if (callbacks.isNotEmpty()) {
             mainHandler.post {
-                callback?.onServiceStateChanged(stateText, connected, clientName)
+                for (cb in callbacks) {
+                    cb.onServiceStateChanged(stateText, connected, clientName)
+                }
             }
         }
     }
@@ -1843,20 +2218,20 @@ class BTRouterServerService : Service() {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
                 STATUS_CHANNEL_ID,
-                "Работа BTRouter Server",
+                str(R.string.notif_channel_status_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Постоянное уведомление работы шлюза BTRouterServer"
+                description = str(R.string.notif_channel_status_desc)
                 setShowBadge(false)
             }
             nm.createNotificationChannel(channel)
 
             val hotspotTriggerChannel = NotificationChannel(
                 HOTSPOT_TRIGGER_CHANNEL_ID,
-                "Управление точкой доступа",
+                str(R.string.notif_channel_hotspot_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Служебные уведомления-триггеры для сценариев Samsung (BTR_HOTSPOT_ON / BTR_HOTSPOT_OFF)"
+                description = str(R.string.notif_channel_hotspot_desc)
                 setShowBadge(false)
                 setSound(null, null)
                 enableVibration(false)
@@ -1865,10 +2240,10 @@ class BTRouterServerService : Service() {
 
             val mobileDataTriggerChannel = NotificationChannel(
                 MOBILE_DATA_TRIGGER_CHANNEL_ID,
-                "Управление мобильным интернетом",
+                str(R.string.notif_channel_mobile_data_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Служебные уведомления-триггеры для сценариев Samsung (BTR_MOBILE_DATA_ON / BTR_MOBILE_DATA_OFF)"
+                description = str(R.string.notif_channel_mobile_data_desc)
                 setShowBadge(false)
                 setSound(null, null)
                 enableVibration(false)
@@ -1884,6 +2259,7 @@ class BTRouterServerService : Service() {
             hotspotState = normalized
             prev != normalized
         }
+        dismissRoutineTriggerIfMatched(hotspotTriggerState, normalized)
         if (changed && pushStatus && isConnected) {
             sendStatusIfChanged(force = false)
         }
@@ -1979,6 +2355,16 @@ class BTRouterServerService : Service() {
     }
 
     private fun readHotspotState(tetherHint: Int = -1): Int {
+        try {
+            val stickyAp = registerReceiver(null, IntentFilter(ACTION_WIFI_AP_STATE_CHANGED))
+            when (stickyAp?.getIntExtra(EXTRA_WIFI_AP_STATE, -1) ?: -1) {
+                WIFI_AP_STATE_ENABLED -> return 1
+                WIFI_AP_STATE_DISABLED -> return 0
+                10, 12 -> if (tetherHint == 0 || tetherHint == 1) return tetherHint else return -1
+            }
+        } catch (_: Throwable) {
+        }
+
         val wmState = readHotspotStateFromWifiManager()
         if (wmState == 0 || wmState == 1) return wmState
 
@@ -1997,8 +2383,9 @@ class BTRouterServerService : Service() {
     private fun readMobileDataState(): Int {
         try {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-                return if (tm.isDataEnabled) 1 else 0
+                val baseTm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val dataTm = getActiveDataTelephonyManager(baseTm)
+                return if (dataTm.isDataEnabled) 1 else 0
             }
         } catch (_: Exception) {
         }
@@ -2021,6 +2408,7 @@ class BTRouterServerService : Service() {
             mobileDataState = current
             prev != current
         }
+        dismissRoutineTriggerIfMatched(mobileDataTriggerState, current)
         if (changed && pushStatus && isConnected) {
             sendStatusIfChanged(force = false)
         }
@@ -2032,6 +2420,7 @@ class BTRouterServerService : Service() {
             cmdName = "SET_HOTSPOT",
             channelId = HOTSPOT_TRIGGER_CHANNEL_ID,
             keyword = if (enabled) HOTSPOT_TRIGGER_ON_KEYWORD else HOTSPOT_TRIGGER_OFF_KEYWORD,
+            targetState = if (enabled) 1 else 0,
             state = hotspotTriggerState,
             successMsg = if (enabled) {
                 "Команда включения точки доступа отправлена на Server"
@@ -2044,12 +2433,12 @@ class BTRouterServerService : Service() {
     }
 
     private fun scheduleHotspotRechecks() {
-        val delays = longArrayOf(HOTSPOT_RECHECK_FIRST_MS, HOTSPOT_RECHECK_SECOND_MS)
+        val delays = longArrayOf(HOTSPOT_RECHECK_FIRST_MS, HOTSPOT_RECHECK_SECOND_MS, HOTSPOT_RECHECK_THIRD_MS)
         for (delayMs in delays) {
             mainHandler.postDelayed({
-                if (isServerRunning && isConnected && !syncExecutor.isShutdown) {
+                if (isServerRunning && isConnected && hotspotTriggerState.isPendingLocked() && !syncExecutor.isShutdown) {
                     syncExecutor.execute {
-                        if (isServerRunning && isConnected) {
+                        if (isServerRunning && isConnected && hotspotTriggerState.isPendingLocked()) {
                             refreshHotspotState(pushStatus = true)
                         }
                     }
@@ -2064,6 +2453,7 @@ class BTRouterServerService : Service() {
             cmdName = "SET_MOBILE_DATA",
             channelId = MOBILE_DATA_TRIGGER_CHANNEL_ID,
             keyword = if (enabled) MOBILE_DATA_TRIGGER_ON_KEYWORD else MOBILE_DATA_TRIGGER_OFF_KEYWORD,
+            targetState = if (enabled) 1 else 0,
             state = mobileDataTriggerState,
             successMsg = if (enabled) {
                 "Команда включения мобильного интернета отправлена на Server"
@@ -2072,6 +2462,22 @@ class BTRouterServerService : Service() {
             },
             errorMsg = "Ошибка отправки уведомления мобильного интернета на Server"
         )
+        scheduleMobileDataRechecks()
+    }
+
+    private fun scheduleMobileDataRechecks() {
+        val delays = longArrayOf(MOBILE_DATA_RECHECK_FIRST_MS, MOBILE_DATA_RECHECK_SECOND_MS, MOBILE_DATA_RECHECK_THIRD_MS)
+        for (delayMs in delays) {
+            mainHandler.postDelayed({
+                if (isServerRunning && isConnected && mobileDataTriggerState.isPendingLocked() && !syncExecutor.isShutdown) {
+                    syncExecutor.execute {
+                        if (isServerRunning && isConnected && mobileDataTriggerState.isPendingLocked()) {
+                            refreshMobileDataState(pushStatus = true)
+                        }
+                    }
+                }
+            }, delayMs)
+        }
     }
 
     private fun triggerSamsungRoutine(
@@ -2079,6 +2485,7 @@ class BTRouterServerService : Service() {
         cmdName: String,
         channelId: String,
         keyword: String,
+        targetState: Int,
         state: RoutineTriggerState,
         successMsg: String,
         errorMsg: String
@@ -2088,7 +2495,7 @@ class BTRouterServerService : Service() {
             return
         }
 
-        acquirePulseWakeLock(4_500L)
+        acquirePulseWakeLock(ROUTINE_TRIGGER_CLEANUP_MS + 1_000L)
         val notifId = state.notifIdGen.getAndIncrement()
 
         val notification = NotificationCompat.Builder(this, channelId)
@@ -2102,36 +2509,36 @@ class BTRouterServerService : Service() {
             .build()
 
         try {
-            synchronized(state.lock) {
-                state.cancelRunnable?.let { mainHandler.removeCallbacks(it) }
-                state.cancelRunnable = null
-                if (state.lastNotifId >= 0) {
-                    try {
-                        NotificationManagerCompat.from(this).cancel(state.lastNotifId)
-                    } catch (_: Exception) {
-                    }
-                    state.lastNotifId = -1
-                }
-            }
+            cancelPendingRoutineCleanup(state)
 
             NotificationManagerCompat.from(this).notify(notifId, notification)
 
             val cancelRunnable = Runnable {
-                synchronized(state.lock) {
+                val shouldCancel = synchronized(state.lock) {
+                    val matched = state.tracker.onTimeout(notifId)
+                    if (matched) {
+                        state.cancelRunnable = null
+                    }
+                    matched
+                }
+                if (shouldCancel) {
                     try {
                         NotificationManagerCompat.from(this).cancel(notifId)
                     } catch (_: Exception) {
                     }
-                    if (state.lastNotifId == notifId) {
-                        state.lastNotifId = -1
-                        state.cancelRunnable = null
-                    }
                 }
             }
 
-            synchronized(state.lock) {
-                state.lastNotifId = notifId
+            val supersededId = synchronized(state.lock) {
+                val prevId = state.tracker.onNotificationPosted(notifId, targetState)
                 state.cancelRunnable = cancelRunnable
+                prevId
+            }
+            if (supersededId >= 0 && supersededId != notifId) {
+                try {
+                    NotificationManagerCompat.from(this).cancel(supersededId)
+                } catch (_: Exception) {
+                }
             }
             mainHandler.postDelayed(cancelRunnable, ROUTINE_TRIGGER_CLEANUP_MS)
 
@@ -2145,10 +2552,39 @@ class BTRouterServerService : Service() {
         }
     }
 
+    private fun dismissRoutineTriggerIfMatched(state: RoutineTriggerState, actualState: Int) {
+        if (actualState != 0 && actualState != 1) return
+        var runnableToRemove: Runnable? = null
+        val notifToCancel = synchronized(state.lock) {
+            val id = state.tracker.dismissIfMatched(actualState)
+            if (id >= 0) {
+                runnableToRemove = state.cancelRunnable
+                state.cancelRunnable = null
+            }
+            id
+        }
+        runnableToRemove?.let { mainHandler.removeCallbacks(it) }
+        if (notifToCancel >= 0) {
+            try {
+                NotificationManagerCompat.from(this).cancel(notifToCancel)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun cancelPendingRoutineCleanup(state: RoutineTriggerState) {
-        synchronized(state.lock) {
-            state.cancelRunnable?.let { mainHandler.removeCallbacks(it) }
+        var runnableToRemove: Runnable? = null
+        val activeId = synchronized(state.lock) {
+            runnableToRemove = state.cancelRunnable
             state.cancelRunnable = null
+            state.tracker.clear()
+        }
+        runnableToRemove?.let { mainHandler.removeCallbacks(it) }
+        if (activeId >= 0) {
+            try {
+                NotificationManagerCompat.from(this).cancel(activeId)
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -2174,8 +2610,8 @@ class BTRouterServerService : Service() {
     }
 
     @Synchronized
-    private fun updateNotification(text: String) {
-        if (text == lastPostedNotifText) return
+    private fun updateNotification(text: String, force: Boolean = false) {
+        if (!force && text == lastPostedNotifText) return
         if (!CompatUtils.hasPostNotificationsPermission(this)) return
         try {
             NotificationManagerCompat.from(this).notify(STATUS_NOTIFICATION_ID, buildNotification(text))
@@ -2235,6 +2671,9 @@ class BTRouterServerService : Service() {
 
                 TelephonyManager.EXTRA_STATE_IDLE,
                 TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+                    if (state == TelephonyManager.EXTRA_STATE_IDLE && isIncomingCallRinging && isTelephonyRinging()) {
+                        return
+                    }
                     cancelHiddenCallPending()
                     val shouldNotifyEnded = isIncomingCallRinging
                     isIncomingCallRinging = false
@@ -2297,7 +2736,15 @@ class BTRouterServerService : Service() {
                     put("isSync", false)
                 }.toString()
 
-                val ev = PendingServerEvent(eventId, "LIVE_SMS", 0L, receivedAtMs, payload)
+                val ev = PendingServerEvent(
+                    eventId = eventId,
+                    kind = "LIVE_SMS",
+                    dbId = 0L,
+                    eventTs = receivedAtMs,
+                    payloadJson = payload,
+                    sender = sender,
+                    body = fullBody
+                )
                 enqueueUnackedLiveSms(ev)
 
                 val ch = activeChannel
@@ -2319,10 +2766,12 @@ class BTRouterServerService : Service() {
                 }
                 BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
                     Log.d(TAG, "Bluetooth выключается — закрываю сокеты")
-                    recordDisconnectTime()
+                    if (isConnected) {
+                        recordDisconnectTime()
+                    }
                     closeActiveClientSession()
                     closeServerSocket()
-                    updateState("Bluetooth на Server выключен", false, "")
+                    updateServerState(ServerState.BtDisabled, false, "")
                 }
             }
         }
@@ -2331,6 +2780,7 @@ class BTRouterServerService : Service() {
     private val smsSentReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_SMS_SENT) return
+            if (intent.getStringExtra(EXTRA_SMS_SENT_TOKEN) != smsSentToken) return
             val cmdId = intent.getStringExtra(EXTRA_SMS_CMD_ID) ?: return
             if (cmdId.isEmpty()) return
 
@@ -2345,10 +2795,10 @@ class BTRouterServerService : Service() {
             }
 
             val completion = synchronized(smsTrackerLock) {
+                val wasActive = (outboundSmsQueue.activeCmdId() == cmdId)
                 val res = outboundSmsQueue.onPartResult(cmdId, errDesc)
-                if (res != null) {
-                    activeSmsTimeoutFuture?.cancel(false)
-                    activeSmsTimeoutFuture = null
+                if (res != null && wasActive) {
+                    cancelActiveSmsTimersLocked()
                 }
                 res
             } ?: return
@@ -2391,19 +2841,23 @@ class BTRouterServerService : Service() {
         cancelPendingRoutineCleanup(hotspotTriggerState)
         cancelPendingRoutineCleanup(mobileDataTriggerState)
         synchronized(smsTrackerLock) {
-            activeSmsTimeoutFuture?.cancel(false)
-            activeSmsTimeoutFuture = null
+            cancelActiveSmsTimersLocked()
             nextSmsDispatchFuture?.cancel(false)
             nextSmsDispatchFuture = null
             outboundSmsQueue.clear()
+            pendingSmsSentResults.clear()
         }
 
+        if (isConnected) {
+            recordDisconnectTime()
+        }
         closeActiveClientSession()
         closeServerSocket()
         wakeServerLoop()
 
         sendExecutor.shutdownNow()
         syncExecutor.shutdownNow()
+        smsExecutor.shutdownNow()
         watchdogExecutor.shutdownNow()
 
         if (isInitialized) {

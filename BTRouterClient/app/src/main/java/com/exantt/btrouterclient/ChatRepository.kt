@@ -18,6 +18,12 @@ class ChatRepository private constructor(context: Context) {
         fun onMissedCallsChanged() {}
     }
 
+    data class IncomingSmsResult(
+        val chatKey: String,
+        val wasArchived: Boolean,
+        val inserted: Boolean
+    )
+
     companion object {
         private const val DB_NAME = "btrouter_chats.db"
         private const val DB_VERSION = 1
@@ -41,6 +47,10 @@ class ChatRepository private constructor(context: Context) {
     var activeChatKey: String? = null
 
     private val dbLock = Any()
+    private val notifyLock = Any()
+    private var notifyScheduled = false
+    private var notifyAllPending = false
+    private var notifySingleKey: String? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private val listeners = CopyOnWriteArraySet<Listener>()
     private val dbHelper = DbHelper(context.applicationContext)
@@ -55,9 +65,31 @@ class ChatRepository private constructor(context: Context) {
 
     private fun notifyChatsChanged(chatKey: String?) {
         if (listeners.isEmpty()) return
+        synchronized(notifyLock) {
+            if (chatKey == null) {
+                notifyAllPending = true
+                notifySingleKey = null
+            } else if (!notifyAllPending) {
+                if (notifySingleKey == null && !notifyScheduled) {
+                    notifySingleKey = chatKey
+                } else if (notifySingleKey != chatKey) {
+                    notifyAllPending = true
+                    notifySingleKey = null
+                }
+            }
+            if (notifyScheduled) return
+            notifyScheduled = true
+        }
         mainHandler.post {
+            val dispatchKey: String?
+            synchronized(notifyLock) {
+                dispatchKey = if (notifyAllPending) null else notifySingleKey
+                notifyScheduled = false
+                notifyAllPending = false
+                notifySingleKey = null
+            }
             for (listener in listeners) {
-                listener.onChatsChanged(chatKey)
+                listener.onChatsChanged(dispatchKey)
             }
         }
     }
@@ -136,7 +168,7 @@ class ChatRepository private constructor(context: Context) {
         otpCode: String?,
         markRead: Boolean = false,
         isSync: Boolean = false
-    ): Pair<String, Boolean> {
+    ): IncomingSmsResult {
         var resolvedKey: String
         var wasArchived = false
         var inserted = false
@@ -159,7 +191,7 @@ class ChatRepository private constructor(context: Context) {
                                 wasArchived = ac.moveToFirst() && ac.getInt(0) == 1
                             }
                             db.setTransactionSuccessful()
-                            return Pair(resolvedKey, wasArchived)
+                            return IncomingSmsResult(resolvedKey, wasArchived, inserted = false)
                         }
                     }
                 }
@@ -183,6 +215,23 @@ class ChatRepository private constructor(context: Context) {
                         existingName = c.getString(1).orEmpty()
                         wasArchived = c.getInt(2) == 1
                         existingLastTs = c.getLong(3)
+                    }
+                }
+
+                if (isSync && chatExists) {
+                    db.rawQuery(
+                        """
+                        SELECT 1 FROM $TABLE_MESSAGES
+                        WHERE chat_key = ? AND is_incoming = 1 AND event_id LIKE 'sms_live_%'
+                          AND body = ? AND ABS(timestamp_ms - ?) <= 120000
+                        LIMIT 1
+                        """.trimIndent(),
+                        arrayOf(resolvedKey, body, timestampMs.toString())
+                    ).use { dupCursor ->
+                        if (dupCursor.moveToFirst()) {
+                            db.setTransactionSuccessful()
+                            return IncomingSmsResult(resolvedKey, wasArchived, inserted = false)
+                        }
                     }
                 }
 
@@ -247,7 +296,7 @@ class ChatRepository private constructor(context: Context) {
         if (inserted) {
             notifyChatsChanged(resolvedKey)
         }
-        return Pair(resolvedKey, wasArchived)
+        return IncomingSmsResult(resolvedKey, wasArchived, inserted)
     }
 
     fun recordOutgoingSms(
@@ -327,6 +376,7 @@ class ChatRepository private constructor(context: Context) {
                 } else {
                     val chatValues = ContentValues().apply {
                         put("address", bestAddress)
+                        put("is_archived", 0)
                         if (bestName.isNotEmpty()) {
                             put("display_name", bestName)
                         }
@@ -355,11 +405,15 @@ class ChatRepository private constructor(context: Context) {
         synchronized(dbLock) {
             val db = dbHelper.writableDatabase
             db.rawQuery(
-                "SELECT chat_key FROM $TABLE_MESSAGES WHERE event_id = ? AND is_incoming = 0 LIMIT 1",
+                "SELECT chat_key, status FROM $TABLE_MESSAGES WHERE event_id = ? AND is_incoming = 0 LIMIT 1",
                 arrayOf(cmdId)
             ).use { cursor ->
                 if (cursor.moveToFirst()) {
-                    affectedChatKey = cursor.getString(0)
+                    val chatKey = cursor.getString(0)
+                    val currentStatus = cursor.getInt(1)
+                    if (ChatLogic.canTransitionOutgoingStatus(currentStatus, newStatus)) {
+                        affectedChatKey = chatKey
+                    }
                 }
             }
             if (affectedChatKey != null) {
@@ -377,6 +431,26 @@ class ChatRepository private constructor(context: Context) {
         if (affectedChatKey != null) {
             notifyChatsChanged(affectedChatKey)
         }
+    }
+
+    fun markStaleSendingAsUnknown(): Int {
+        val updated: Int
+        synchronized(dbLock) {
+            val db = dbHelper.writableDatabase
+            val values = ContentValues().apply {
+                put("status", ChatLogic.STATUS_UNKNOWN)
+            }
+            updated = db.update(
+                TABLE_MESSAGES,
+                values,
+                "is_incoming = 0 AND status = ?",
+                arrayOf(ChatLogic.STATUS_SENDING.toString())
+            )
+        }
+        if (updated > 0) {
+            notifyChatsChanged(null)
+        }
+        return updated
     }
 
     fun getActiveChats(): List<ChatLogic.ChatThread> {
@@ -779,6 +853,27 @@ class ChatRepository private constructor(context: Context) {
         }
     }
 
+    fun getMaxMissedCallId(): Long {
+        synchronized(dbLock) {
+            val db = dbHelper.readableDatabase
+            db.rawQuery("SELECT COALESCE(MAX(id), 0) FROM $TABLE_MISSED_CALLS", null).use { c ->
+                return if (c.moveToFirst()) c.getLong(0) else 0L
+            }
+        }
+    }
+
+    fun getUnreadMissedCallsCountAfterId(lastViewedId: Long): Int {
+        synchronized(dbLock) {
+            val db = dbHelper.readableDatabase
+            db.rawQuery(
+                "SELECT COUNT(*) FROM $TABLE_MISSED_CALLS WHERE id > ?",
+                arrayOf(lastViewedId.toString())
+            ).use { c ->
+                return if (c.moveToFirst()) c.getInt(0) else 0
+            }
+        }
+    }
+
     private fun pickBetterAddress(existing: String, incoming: String): String {
         if (existing.isBlank()) return incoming
         if (incoming.isBlank()) return existing
@@ -787,6 +882,9 @@ class ChatRepository private constructor(context: Context) {
     }
 
     private class DbHelper(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
+        init {
+            setWriteAheadLoggingEnabled(true)
+        }
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(
                 """

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
 import androidx.core.app.ActivityCompat
 
 object CompatUtils {
@@ -44,7 +45,29 @@ object CompatUtils {
 
     fun getSmsManager(context: Context): SmsManager? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(SmsManager::class.java)
+            val base = context.getSystemService(SmsManager::class.java) ?: return null
+            var subId = SubscriptionManager.getDefaultSmsSubscriptionId()
+            if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                subId = SubscriptionManager.getDefaultSubscriptionId()
+            }
+            if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+            ) {
+                try {
+                    val sm = context.getSystemService(SubscriptionManager::class.java)
+                    @Suppress("DEPRECATION")
+                    val firstActive = sm?.activeSubscriptionInfoList?.firstOrNull()?.subscriptionId
+                    if (firstActive != null && firstActive != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                        subId = firstActive
+                    }
+                } catch (_: Exception) {
+                }
+            }
+            if (subId != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                base.createForSubscriptionId(subId)
+            } else {
+                base
+            }
         } else {
             @Suppress("DEPRECATION")
             SmsManager.getDefault()

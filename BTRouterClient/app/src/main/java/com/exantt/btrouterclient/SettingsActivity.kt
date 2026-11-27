@@ -26,6 +26,8 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -82,7 +84,7 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as BTRouterClientService.LocalBinder
             clientService = localBinder.getService()
-            clientService?.callback = this@SettingsActivity
+            clientService?.addCallback(this@SettingsActivity)
             isBound = true
             tvGatewayStatus.text = clientService?.lastStatusText ?: getString(R.string.status_preparing)
         }
@@ -99,6 +101,10 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContentView(R.layout.activity_settings)
 
         restoredSelectedMac = savedInstanceState?.getString(STATE_SELECTED_MAC)
@@ -249,8 +255,8 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
         super.onStart()
         chatRepo.addListener(this)
         updateArchivedSummary()
-        if (isBound) {
-            clientService?.callback = this
+        if (isBound && clientService != null) {
+            clientService?.addCallback(this)
             tvGatewayStatus.text = clientService?.lastStatusText ?: getString(R.string.status_preparing)
         } else if (CompatUtils.hasBluetoothConnectPermission(this)) {
             bindClientService()
@@ -268,9 +274,7 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     override fun onStop() {
         super.onStop()
         chatRepo.removeListener(this)
-        if (clientService?.callback === this) {
-            clientService?.callback = null
-        }
+        clientService?.removeCallback(this)
     }
 
     override fun onChatsChanged(chatKey: String?) {
@@ -289,7 +293,7 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     override fun onDestroy() {
         super.onDestroy()
         if (isBound) {
-            unbindService(serviceConnection)
+            try { unbindService(serviceConnection) } catch (_: Exception) {}
             isBound = false
         }
     }
@@ -309,9 +313,11 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     private fun applySystemInsets() {
         settingsScrollView.clipToPadding = false
         ViewCompat.setOnApplyWindowInsetsListener(settingsRoot) { _, windowInsets ->
-            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val systemBars = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
             val imeAndBars = windowInsets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime()
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
             )
             settingsRoot.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             settingsScrollView.setPadding(0, 0, 0, imeAndBars.bottom)
@@ -385,7 +391,7 @@ class SettingsActivity : AppCompatActivity(), BTRouterClientService.ServiceCallb
     private fun bindClientService() {
         val serviceIntent = Intent(this, BTRouterClientService::class.java)
         if (!isBound) {
-            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+            isBound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 

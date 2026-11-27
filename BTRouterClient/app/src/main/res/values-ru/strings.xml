@@ -22,6 +22,7 @@
     <string name="btn_copy_otp_default">📋 СКОПИРОВАТЬ КОД</string>
     <string name="btn_copy_otp_code">📋 СКОПИРОВАТЬ %1$s</string>
     <string name="otp_copied_toast">Код %1$s скопирован в буфер</string>
+    <string name="otp_copied_toast_safe">Код скопирован в буфер</string>
     <string name="hint_reply_message">Написать ответ...</string>
     <string name="btn_send_reply">ОТПРАВИТЬ ОТВЕТ</string>
     <string name="send_sms_panel_title">Отправить СМС</string>
@@ -68,7 +69,7 @@
     <string name="settings_save_gateway">СОХРАНИТЬ НАСТРОЙКИ ШЛЮЗА</string>
     <string name="settings_waiting_service">Ожидание состояния службы...</string>
     <string name="settings_sync_title">СИНХРОНИЗАЦИЯ С SERVER</string>
-    <string name="settings_sync_desc">Загрузить пропущенные СМС и звонки с устройства Server</string>
+    <string name="settings_sync_desc">После разрыва связи синхронизация запускается автоматически. Кнопки ниже — для ручного запроса.</string>
     <string name="btn_sync_5min">СИНХР (5 МИН)</string>
     <string name="btn_sync_disconnect">СИНХР С ОБРЫВА</string>
     <string name="settings_otp_title">АВТОКОПИРОВАНИЕ КОДОВ (OTP)</string>
@@ -112,6 +113,7 @@
     <string name="contacts_connecting_loading_server">Подключение к службе и загрузка контактов с Server...</string>
     <string name="contacts_grant_permission_notice">Выдайте разрешение на чтение контактов Client</string>
     <string name="btn_grant_contacts_permission">ВЫДАТЬ ДОСТУП К КОНТАКТАМ</string>
+    <string name="btn_open_app_settings">ОТКРЫТЬ НАСТРОЙКИ</string>
     <string name="contacts_reading_client">Чтение контактов Client...</string>
     <string name="contacts_offline_cached">Нет связи с Server — показаны загруженные ранее контакты</string>
     <string name="contacts_section_recent">НЕДАВНИЕ (СМС)</string>
@@ -144,6 +146,7 @@
     <string name="error_no_active_channel">Нет активного канала Server</string>
     <string name="error_empty_sms_text">Введите текст сообщения</string>
     <string name="error_sms_too_long">Слишком длинное СМС (макс. %1$d симв.)</string>
+    <string name="error_sms_too_many_parts">Слишком длинное СМС (макс. %1$d частей)</string>
     <string name="dial_no_connection">Нет связи с Server — звонок не отправлен</string>
     <string name="dial_sending">Команда звонка передаётся на Server...</string>
     <string name="contacts_no_connection">Нет связи с Server — не удалось загрузить контакты</string>
@@ -195,7 +198,7 @@
     <string name="quick_tile_hotspot">Точка доступа</string>
 
     <!-- Чаты / Сообщения / Архив / Пропущенные вызовы -->
-    <string name="chat_badge_new">New</string>
+    <string name="chat_badge_new">Новое</string>
     <string name="chat_preview_you_prefix">Вы: %1$s</string>
     <string name="chats_empty_title">Пока нет чатов</string>
     <string name="chats_empty_subtitle">Здесь будут появляться входящие СМС-уведомления и отправленные сообщения</string>
@@ -248,4 +251,11 @@
     <string name="dialog_delete_message_title">Удалить сообщение?</string>
     <string name="dialog_delete_message_confirm">Сообщение будет удалено из истории чата на Client.</string>
     <string name="toast_message_deleted">Сообщение удалено</string>
+    <string name="hotspot_verify_failed_on">Точка доступа на Server не включилась за 8 с (проверьте сценарии Samsung на Server)</string>
+    <string name="hotspot_verify_failed_off">Точка доступа на Server не выключилась за 8 с (проверьте сценарии Samsung на Server)</string>
+    <string name="mobile_data_verify_failed_on">Мобильный интернет на Server не включился за 8 с (проверьте сценарии Samsung на Server)</string>
+    <string name="mobile_data_verify_failed_off">Мобильный интернет на Server не выключился за 8 с (проверьте сценарии Samsung на Server)</string>
+    <string name="channel_alert_name">Предупреждения управления Server</string>
+    <string name="channel_alert_desc">Оповещения, если удалённое переключение на Server не сработало</string>
+    <string name="notif_toggle_failed_title">Сценарий на Server не сработал</string>
 </resources>

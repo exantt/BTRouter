@@ -14,7 +14,7 @@
         android:layout_gravity="center_horizontal"
         android:paddingTop="14dp"
         android:paddingBottom="12dp"
-        android:text="Server (Шлюз)"
+        android:text="@string/server_header_title"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold" />
@@ -36,12 +36,12 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ГЛАВНАЯ" />
+            android:text="@string/tab_main" />
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="НАСТРОЙКИ" />
+            android:text="@string/tab_settings" />
     </com.google.android.material.tabs.TabLayout>
 
     <View
@@ -89,7 +89,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="СТАТУС ШЛЮЗА"
+                            android:text="@string/card_gateway_status"
                             android:textColor="#8E8E93"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -98,7 +98,7 @@
                             android:id="@+id/tvClientConnBadge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="● ОЖИДАНИЕ"
+                            android:text="@string/badge_waiting"
                             android:textColor="#FF9800"
                             android:textSize="11sp"
                             android:textStyle="bold" />
@@ -109,7 +109,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Запуск фоновой службы..."
+                        android:text="@string/status_starting_service"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp" />
                 </LinearLayout>
@@ -127,7 +127,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:text="БЕЗОПАСНОСТЬ И ДОСТУП CLIENT"
+                        android:text="@string/card_security_title"
                         android:textColor="#8E8E93"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -137,7 +137,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
-                        android:text="Client не выбран (подключения отклоняются)"
+                        android:text="@string/client_not_selected"
                         android:textColor="#E5E5EA"
                         android:textSize="13sp" />
 
@@ -147,14 +147,14 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="14dp"
                         android:backgroundTint="#2196F3"
-                        android:text="ВЫБРАТЬ УСТРОЙСТВО CLIENT"
+                        android:text="@string/btn_select_client"
                         android:textColor="#FFFFFF" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="4dp"
-                        android:text="КЛЮЧ СОПРЯЖЕНИЯ (PSK)"
+                        android:text="@string/pairing_key_label"
                         android:textColor="#8E8E93"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -185,7 +185,7 @@
                             android:backgroundTint="#2C2C2E"
                             android:maxLines="1"
                             android:paddingHorizontal="4dp"
-                            android:text="ПОКАЗАТЬ"
+                            android:text="@string/btn_show_secret"
                             android:textColor="#FFFFFF"
                             android:textSize="10sp" />
 
@@ -198,7 +198,7 @@
                             android:backgroundTint="#2C2C2E"
                             android:maxLines="1"
                             android:paddingHorizontal="4dp"
-                            android:text="КОПИР."
+                            android:text="@string/btn_copy_secret"
                             android:textColor="#FFFFFF"
                             android:textSize="10sp" />
 
@@ -210,7 +210,7 @@
                             android:backgroundTint="#4A2020"
                             android:maxLines="1"
                             android:paddingHorizontal="4dp"
-                            android:text="ОБНОВИТЬ"
+                            android:text="@string/btn_regenerate_secret"
                             android:textColor="#FF8A80"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -239,7 +239,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
-                        android:text="СИСТЕМНЫЕ НАСТРОЙКИ SERVER"
+                        android:text="@string/card_system_settings_title"
                         android:textColor="#8E8E93"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -250,7 +250,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
                         android:backgroundTint="#2C2C2E"
-                        android:text="ПРАВА И БАТАРЕЯ ПРИЛОЖЕНИЯ"
+                        android:text="@string/btn_app_settings"
                         android:textColor="#FFFFFF" />
 
                     <Button
@@ -259,7 +259,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
                         android:backgroundTint="#2C2C2E"
-                        android:text="НАСТРОЙКИ BLUETOOTH"
+                        android:text="@string/btn_bt_settings"
                         android:textColor="#FFFFFF" />
 
                     <Button
@@ -267,8 +267,71 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="#2C2C2E"
-                        android:text="ЗАПРОСИТЬ РАЗРЕШЕНИЯ"
+                        android:text="@string/btn_request_permissions"
                         android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <!-- ЯЗЫК ИНТЕРФЕЙСА -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:background="#1C1C1E"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_language_title"
+                        android:textColor="#8E8E93"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="10dp"
+                        android:text="@string/card_language_desc"
+                        android:textColor="#AAAAAA"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#121212"
+                        android:orientation="horizontal"
+                        android:padding="3dp"
+                        android:weightSum="2">
+
+                        <Button
+                            android:id="@+id/btnLangRu"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="3dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="#2196F3"
+                            android:minHeight="0dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/lang_russian"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnLangEn"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:backgroundTint="#1C1C1E"
+                            android:minHeight="0dp"
+                            android:paddingVertical="0dp"
+                            android:text="@string/lang_english"
+                            android:textColor="#8E8E93"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- ТЕСТОВЫЕ КНОПКИ (ТОЛЬКО ДЛЯ DEBUG-СБОРКИ) -->
@@ -286,7 +349,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
-                        android:text="ОТЛАДКА (DEBUG)"
+                        android:text="@string/card_debug_title"
                         android:textColor="#8E8E93"
                         android:textSize="11sp"
                         android:textStyle="bold" />
@@ -297,7 +360,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
                         android:backgroundTint="#FF9800"
-                        android:text="ТЕСТОВЫЙ ЗВОНОК НА CLIENT"
+                        android:text="@string/btn_test_call"
                         android:textColor="#FFFFFF" />
 
                     <Button
@@ -306,7 +369,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="8dp"
                         android:backgroundTint="#E91E63"
-                        android:text="ТЕСТОВЫЙ ПРОПУЩЕННЫЙ ВЫЗОВ"
+                        android:text="@string/btn_test_missed_call"
                         android:textColor="#FFFFFF" />
 
                     <Button
@@ -314,7 +377,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:backgroundTint="#2196F3"
-                        android:text="ОТПРАВИТЬ СТАТУС (БАТАРЕЯ / СЕТЬ)"
+                        android:text="@string/btn_test_status"
                         android:textColor="#FFFFFF" />
                 </LinearLayout>
             </LinearLayout>

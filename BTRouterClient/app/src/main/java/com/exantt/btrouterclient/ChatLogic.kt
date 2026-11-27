@@ -84,10 +84,12 @@ object ChatLogic {
         }
         if (exactDigitMatch != null) return exactDigitMatch
 
-        // Затем ищем однозначное совпадение по последним 10 цифрам (например +7900... vs 8900... или 900...)
+        // Затем ищем однозначное совпадение по последним 10 цифрам (например +7900... vs 8900... или 900...),
+        // но запрещаем слияние между двумя международными номерами с разными кодами стран (+7... и +1...)
         val last10 = keyDigits.takeLast(10)
         val last10Matches = existingKeys.filter { candidate ->
             if (!isPhoneLikeAddress(candidate)) return@filter false
+            if (key.startsWith("+") && candidate.startsWith("+")) return@filter false
             val candDigits = ContactsHelper.digitsOnly(candidate)
             candDigits.length >= 10 && candDigits.takeLast(10) == last10
         }
@@ -191,11 +193,23 @@ object ChatLogic {
         if (isSync) {
             return if (rawTimestampMs > 0L) rawTimestampMs else receivedAtMs
         }
+        if (rawTimestampMs > 0L && (receivedAtMs - rawTimestampMs) > 60_000L) {
+            return rawTimestampMs
+        }
         val base = receivedAtMs
         return if (existingLastTs > 0L && base <= existingLastTs) {
             existingLastTs + 1L
         } else {
             base
+        }
+    }
+
+    fun canTransitionOutgoingStatus(currentStatus: Int, newStatus: Int): Boolean {
+        if (currentStatus == newStatus) return false
+        return when (currentStatus) {
+            STATUS_SENT -> false
+            STATUS_FAILED -> newStatus == STATUS_SENT
+            else -> true
         }
     }
 }

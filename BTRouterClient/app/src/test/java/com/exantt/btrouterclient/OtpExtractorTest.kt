@@ -194,4 +194,18 @@ class OtpExtractorTest {
         assertNull(OtpExtractor.extract("", "ZIRAAT"))
         assertNull(OtpExtractor.extract("   ", "900"))
     }
+
+    @Test
+    fun adversarialInputs_doNotTriggerCatastrophicBacktracking() {
+        val inputs = listOf(
+            "code 850" + (" ".repeat(150) + "1").repeat(7) + "9",
+            "code 444" + (" ".repeat(200) + "1").repeat(4) + "9"
+        )
+        val startNs = System.nanoTime()
+        for (text in inputs) {
+            assertNull(OtpExtractor.extract(text, "BANK"))
+        }
+        val elapsedMs = (System.nanoTime() - startNs) / 1_000_000L
+        org.junit.Assert.assertTrue("OtpExtractor ReDoS check took too long: ${elapsedMs}ms", elapsedMs < 100L)
+    }
 }
